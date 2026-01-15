@@ -1,0 +1,484 @@
+/* ---------------------------------------------------------
+   Global & Reset
+--------------------------------------------------------- */
+:root {
+    --vscode-bg: #1e1e1e;
+    --vscode-fg: #cccccc;
+    --border-color: #3e3e42;
+    --input-bg: #3c3c3c;
+    --input-border: #555555;
+    --accent-color: #007acc;
+    --accent-hover: #005aa3;
+    --success-color: #28a745;
+    --error-color: #dc3545;
+    --warning-bg: #fff3cd;
+    --warning-text: #856404;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: var(--vscode-bg);
+    color: var(--vscode-fg);
+    height: 100vh;
+    overflow: hidden;
+    font-size: 13px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+::-webkit-scrollbar-thumb {
+    background: #424242;
+    border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #4f4f4f;
+}
+
+button {
+    cursor: pointer;
+    font-family: inherit;
+}
+
+/* ---------------------------------------------------------
+   App Header
+--------------------------------------------------------- */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: #252526;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.app-header h1 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.app-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.env-indicator {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.toggle-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.toggle-btn:hover {
+    background: var(--accent-hover);
+}
+
+/* ---------------------------------------------------------
+   Layout
+--------------------------------------------------------- */
+.main-content {
+    height: calc(100vh - 55px); /* Header height approx */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.left-panel {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------
+   Environment Selector
+--------------------------------------------------------- */
+.environment-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: #2d2d30;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.environment-selector label {
+    margin: 0;
+    font-weight: 600;
+    white-space: nowrap;
+    color: #fff;
+}
+
+.environment-selector select {
+    flex: 1;
+    padding: 6px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--vscode-fg);
+    border-radius: 2px;
+}
+
+.refresh-btn {
+    background: transparent;
+    border: none;
+    color: var(--vscode-fg);
+    padding: 6px;
+    font-size: 16px;
+    transition: color 0.2s;
+}
+
+.refresh-btn:hover {
+    color: var(--accent-color);
+}
+
+.refresh-btn.rotating {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+.env-status {
+    font-size: 11px;
+    color: #888;
+    min-width: 80px;
+    text-align: right;
+}
+
+/* ---------------------------------------------------------
+   Tabs
+--------------------------------------------------------- */
+.tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-button {
+    background: transparent;
+    border: none;
+    color: #999;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.tab-button:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.05);
+}
+
+.tab-button.active {
+    color: #fff;
+    border-bottom: 2px solid var(--accent-color);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------------------------------------------------------
+   Forms & Inputs
+--------------------------------------------------------- */
+.request-section label {
+    display: block;
+    margin: 15px 0 5px;
+    font-weight: 600;
+    color: #ddd;
+    font-size: 12px;
+}
+
+.input-with-preview {
+    position: relative;
+    margin-bottom: 5px;
+}
+
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+    width: 100%;
+    padding: 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--vscode-fg);
+    border-radius: 2px;
+    box-sizing: border-box;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* ---------------------------------------------------------
+   Previews & Validation
+--------------------------------------------------------- */
+.preview-hint {
+    margin-top: 4px;
+    font-size: 11px;
+    padding: 4px 8px;
+    background: #252526;
+    border-left: 3px solid var(--accent-color);
+    color: #aaa;
+    display: none;
+    font-family: 'Consolas', monospace;
+}
+
+.preview-hint.error {
+    border-left-color: var(--error-color);
+    color: #f88;
+}
+
+.validation-panel {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    background: #2d2d2d;
+    border: 1px solid var(--border-color);
+}
+
+.validation-message {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.validation-error .error-message {
+    color: #ff6b6b;
+}
+
+/* ---------------------------------------------------------
+   Query Parameters
+--------------------------------------------------------- */
+.query-params {
+    margin: 10px 0;
+    padding: 10px;
+    background: #252526;
+    border-radius: 4px;
+}
+
+.query-param-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.remove-btn {
+    color: #888;
+    font-size: 14px;
+}
+.remove-btn:hover { color: var(--error-color); }
+
+#add-query-param {
+    background: transparent;
+    color: var(--accent-color);
+    border: 1px dashed var(--accent-color);
+    padding: 4px 10px;
+    font-size: 11px;
+}
+#add-query-param:hover { background: rgba(0,122,204,0.1); }
+
+/* ---------------------------------------------------------
+   Actions & Buttons
+--------------------------------------------------------- */
+.actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+button {
+    padding: 8px 16px;
+    border-radius: 2px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+#send {
+    background: var(--accent-color);
+    color: white;
+}
+#send:hover { background: var(--accent-hover); }
+
+#save-request, #validate-request {
+    background: #3e3e42;
+    color: #fff;
+}
+#save-request:hover, #validate-request:hover { background: #4e4e52; }
+
+#export-curl, #import-curl {
+    background: transparent;
+    border: 1px solid #555;
+    color: #ccc;
+}
+#export-curl:hover, #import-curl:hover { border-color: #888; color: #fff; }
+
+/* ---------------------------------------------------------
+   Response Section
+--------------------------------------------------------- */
+#response-section {
+    margin-top: 20px;
+}
+
+#response-info {
+    margin: 10px 0;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+}
+
+.status-success { color: var(--success-color); }
+.status-error { color: var(--error-color); }
+
+.response-tabs {
+    margin: 10px 0;
+}
+
+.response-tab-button {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: #888;
+    padding: 4px 12px;
+    margin-right: -1px;
+}
+.response-tab-button.active {
+    background: #3e3e42;
+    color: #fff;
+    border-color: #3e3e42;
+}
+
+#response-body, #response-headers {
+    background: #1e1e1e;
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    border-radius: 2px;
+    font-family: 'Consolas', monospace;
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow: auto;
+    font-size: 12px;
+}
+
+/* ---------------------------------------------------------
+   History & Collections
+--------------------------------------------------------- */
+.history-item {
+    background: #252526;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.history-item:hover { background: #2d2d30; }
+
+.history-item .method {
+    font-weight: bold;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    margin-right: 8px;
+    display: inline-block;
+    width: 45px;
+    text-align: center;
+}
+
+/* Method Colors */
+.GET { background: rgba(107, 185, 240, 0.2); color: #6bb9f0; }
+.POST { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+.PUT { background: rgba(230, 126, 34, 0.2); color: #e67e22; }
+.DELETE { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+.PATCH { background: rgba(155, 89, 182, 0.2); color: #9b59b6; }
+
+.collection-item {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+.collection-item:hover { background: #2d2d30; }
+
+/* ---------------------------------------------------------
+   Modals
+--------------------------------------------------------- */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    backdrop-filter: blur(2px);
+}
+
+.modal-content {
+    background-color: #252526;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    width: 400px;
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.modal-content h3 { margin-top: 0; color: #fff; }
+
+.modal-content button {
+    margin-top: 15px;
+    margin-right: 10px;
+}
+
+.modal-content .cancel {
+    background: transparent;
+    border: 1px solid #555;
+}

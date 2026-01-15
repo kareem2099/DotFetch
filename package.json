@@ -1,0 +1,95 @@
+{
+  "name": "dotfetch",
+  "displayName": "DotFetch",
+  "description": "A professional HTTP client extension for VS Code with environment variables, collections, and cURL support",
+  "version": "1.0.0",
+  "publisher": "FreeRave",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FreeRave/DotFetch.git"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "icon": "media/icon.png",
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "dotfetch.copyVariable",
+        "title": "Copy Variable",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "dotfetch.refreshEnvironments",
+        "title": "Refresh Environments",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "dotfetch.refreshEnvironments",
+          "when": "view == dotfetchEnvironments",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "dotfetch.copyVariable",
+          "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
+          "group": "7_modification@1"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "dotfetch-container",
+          "title": "DotFetch",
+          "icon": "media/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "dotfetch-container": [
+        {
+          "id": "dotfetchView",
+          "name": "HTTP Client",
+          "type": "webview",
+          "icon": "media/icon.png"
+        },
+        {
+          "id": "dotfetchEnvironments",
+          "name": "Environment Variables",
+          "icon": "media/icon.png"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.106.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3"
+  },
+  "dependencies": {
+    "axios": "^1.7.7"
+  }
+}

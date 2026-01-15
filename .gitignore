@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.package-lock.json
+
+# Production
+out/
+dist/
+*.vsix
+
+# Environment Variables (IMPORTANT for your privacy)
+.env
+.env.*
+
+# Editor directories and files
+.vscode-test/
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# System Files
+.DS_Store
+Thumbs.db

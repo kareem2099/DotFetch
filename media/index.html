@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DotFetch</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <div class="app-header">
+        <h1>DotFetch - HTTP Client</h1>
+        <div class="app-controls">
+            <div class="environment-info">
+                <span id="env-indicator" class="env-indicator-none">No Environment</span>
+            </div>
+            <div class="global-actions">
+                <button id="toggle-variables" title="Toggle Variables Panel" class="toggle-btn">📋 Variables</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content" id="main-content">
+        <!-- Left Panel - Request Builder -->
+        <div class="left-panel" id="request-builder">
+
+            <!-- Environment Selector -->
+            <div class="environment-selector">
+                <label for="environment">Environment:</label>
+                <select id="environment">
+                    <option value="none">No Environment</option>
+                </select>
+                <button id="refresh-environments" title="Refresh Environments" class="refresh-btn">🔄</button>
+                <div class="env-status" id="env-status">
+                    <span id="env-count">0 variables</span>
+                </div>
+            </div>
+
+            <!-- Validation Panel -->
+            <div class="validation-panel" id="validation-panel" style="display: none;">
+                <div class="validation-header">
+                    <span class="validation-icon">⚠️</span>
+                    <span class="validation-title">Variable Validation</span>
+                </div>
+                <div class="validation-content" id="validation-content">
+                    <!-- Validation messages will go here -->
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-button active" data-tab="request">Request</button>
+                <button class="tab-button" data-tab="history">History</button>
+                <button class="tab-button" data-tab="collections">Collections</button>
+                <button class="tab-button" data-tab="settings">Settings</button>
+            </div>
+
+            <!-- Request Tab -->
+            <div id="request-tab" class="tab-content active">
+                <div class="request-section">
+                    <label for="method">Method:</label>
+                    <select id="method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="PATCH">PATCH</option>
+                        <option value="HEAD">HEAD</option>
+                        <option value="OPTIONS">OPTIONS</option>
+                    </select>
+
+                    <label for="url">URL:</label>
+                    <div class="input-with-preview">
+                        <div contenteditable="true" id="url" class="editable-input">https://jsonplaceholder.typicode.com/posts/1</div>
+                        <div class="preview-hint" id="url-preview"></div>
+                    </div>
+
+                    <!-- Query Parameters -->
+                    <div class="query-params">
+                        <label>Query Parameters:</label>
+                        <div id="query-params-list"></div>
+                        <button id="add-query-param">+ Add Parameter</button>
+                    </div>
+
+                    <label for="headers">Headers (one per line, format: Key: Value):</label>
+                    <div class="input-with-preview">
+                        <div contenteditable="true" id="headers" class="editable-textarea">Content-Type: application/json
+Authorization: Bearer token</div>
+                        <div class="preview-hint" id="headers-preview"></div>
+                    </div>
+
+                    <label for="body">Body (JSON):</label>
+                    <div class="input-with-preview">
+                        <div contenteditable="true" id="body" class="editable-textarea">{"key": "value"}</div>
+                        <div class="preview-hint" id="body-preview"></div>
+                    </div>
+
+                    <div class="actions">
+                        <button id="send">Send Request</button>
+                        <button id="validate-request" title="Validate Variables">✓ Validate</button>
+                        <button id="save-request">💾 Save</button>
+                        <button id="export-curl">📤 Export cURL</button>
+                        <button id="import-curl">📋 Import cURL</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history-tab" class="tab-content">
+                <div class="history-section">
+                    <h3>Request History</h3>
+                    <div id="history-list"></div>
+                    <button id="clear-history">Clear History</button>
+                </div>
+            </div>
+
+            <!-- Collections Tab -->
+            <div id="collections-tab" class="tab-content">
+                <div class="collections-section">
+                    <h3>Collections</h3>
+                    <div id="collections-list"></div>
+                    <button id="create-collection">+ New Collection</button>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="tab-content">
+                <div class="settings-section">
+                    <h3>Settings</h3>
+                    <label for="timeout">Timeout (ms):</label>
+                    <input type="number" id="timeout" value="10000">
+                </div>
+            </div>
+
+            <!-- Response Section -->
+            <div id="response-section">
+                <h3>Response</h3>
+                <div id="response-info"></div>
+                <div class="response-tabs">
+                    <button class="response-tab-button active" data-response-tab="body">Body</button>
+                    <button class="response-tab-button" data-response-tab="headers">Headers</button>
+                </div>
+                <div id="response-body-tab" class="response-content active">
+                    <pre id="response-body"></pre>
+                </div>
+                <div id="response-headers-tab" class="response-content">
+                    <pre id="response-headers"></pre>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Modals -->
+    <div id="save-modal" class="modal">
+        <div class="modal-content">
+            <h3>Save Request</h3>
+            <input type="text" id="save-name" placeholder="Request name">
+            <select id="save-collection">
+                <option value="">Select Collection</option>
+            </select>
+            <button id="confirm-save">Save</button>
+            <button class="cancel">Cancel</button>
+        </div>
+    </div>
+
+    <div id="collection-modal" class="modal">
+        <div class="modal-content">
+            <h3>Create Collection</h3>
+            <input type="text" id="collection-name" placeholder="Collection name">
+            <button id="confirm-create-collection">Create</button>
+            <button class="cancel">Cancel</button>
+        </div>
+    </div>
+
+    <div id="curl-import-modal" class="modal">
+        <div class="modal-content">
+            <h3>Import cURL</h3>
+            <p style="margin-bottom: 10px; color: #aaa; font-size: 12px;">Paste your cURL command below:</p>
+            <textarea id="curl-import-input" rows="5" style="width: 100%; margin-bottom: 15px;" placeholder="curl -X POST https://api.example.com..."></textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="confirm-import-curl">Import</button>
+                <button class="cancel" style="background: transparent; border: 1px solid #555;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+</html>
