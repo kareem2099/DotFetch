@@ -9,7 +9,7 @@
     "url": "https://github.com/kareem2099/DotFetch.git"
   },
   "engines": {
-    "vscode": "^1.74.0"
+    "vscode": "^1.80.0"
   },
   "icon": "media/icon.png",
   "categories": [
