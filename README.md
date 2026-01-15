@@ -10,7 +10,7 @@
 [![VS Code](https://img.shields.io/badge/VS_Code-1.74+-blue.svg)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-[📥 Install from Marketplace](https://marketplace.visualstudio.com/items?itemName=FreeRave.dotfetch) • [📖 Documentation](https://github.com/FreeRave/dotfetch) • [🐛 Report Issues](https://github.com/FreeRave/dotfetch/issues)
+[📥 Install from Marketplace](https://marketplace.visualstudio.com/items?itemName=FreeRave.dotfetch) • [📖 Documentation](https://github.com/kareem2099/DotFetch) • [🐛 Report Issues](https://github.com/kareem2099/DotFetch/issues)
 
 ---
 

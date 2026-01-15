@@ -10,7 +10,7 @@ To start working on DotFetch locally:
 
 1.  **Fork and Clone** the repository:
     ```bash
-    git clone https://github.com/FreeRave/DotFetch.git
+    git clone https://github.com/kareem2099/DotFetch.git
     cd dotfetch
     ```
 
