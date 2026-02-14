@@ -60,6 +60,10 @@ class DotFetchProvider implements vscode.WebviewViewProvider {
 
 		// Replace the stylesheet and script paths
 		htmlContent = htmlContent.replace('./styles.css', styleUri.toString());
+		const loggerUri = webviewView.webview.asWebviewUri(
+			vscode.Uri.joinPath(this.context.extensionUri, 'media', 'logger.js')
+		);
+		htmlContent = htmlContent.replace('./logger.js', loggerUri.toString());
 		htmlContent = htmlContent.replace('./script.js', scriptUri.toString());
 
 		// Add nonce to script tag
