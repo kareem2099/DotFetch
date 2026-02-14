@@ -8,7 +8,7 @@ export class EnvironmentTreeItem extends vscode.TreeItem {
         public readonly environment?: Environment,
         public readonly variableName?: string,
         public readonly variableValue?: string,
-        public readonly command?: vscode.Command
+        command?: vscode.Command
     ) {
         super(label, collapsibleState);
 
@@ -18,33 +18,71 @@ export class EnvironmentTreeItem extends vscode.TreeItem {
 
         // Add command for variable items to copy value
         if (variableName && variableValue) {
-            this.command = {
+            this.command = command || {
                 command: 'dotfetch.copyVariable',
                 title: 'Copy Variable Value',
                 arguments: [variableName, variableValue]
             };
+        } else if (environment) {
+            // Add command to open environment file
+            this.command = {
+                command: 'dotfetch.openEnvironmentFile',
+                title: 'Open Environment File',
+                arguments: [environment.filePath]
+            };
+        } else if (command) {
+            this.command = command;
         }
     }
 
-    private getTooltip(): string {
+    private getTooltip(): string | vscode.MarkdownString {
         if (this.variableName && this.variableValue) {
-            return `${this.variableName}: ${this.variableValue}`;
+            // Use MarkdownString for better formatting
+            const tooltip = new vscode.MarkdownString();
+            tooltip.appendMarkdown(`**Variable:** \`${this.variableName}\`\n\n`);
+            tooltip.appendMarkdown('**Value:**\n');
+            tooltip.appendCodeblock(this.variableValue, 'text');
+            tooltip.appendMarkdown('\n\n*Click to copy*');
+            tooltip.isTrusted = true;
+            return tooltip;
         }
+        
         if (this.environment) {
             const varCount = Object.keys(this.environment.variables).length;
-            return `${this.environment.name} (${varCount} variables)\n${this.environment.filePath}`;
+            const tooltip = new vscode.MarkdownString();
+            tooltip.appendMarkdown(`**${this.environment.name}**\n\n`);
+            tooltip.appendMarkdown(`📊 Variables: **${varCount}**\n\n`);
+            tooltip.appendMarkdown(`📁 File: \`${this.environment.filePath}\`\n\n`);
+            tooltip.appendMarkdown('*Click to open file*');
+            tooltip.isTrusted = true;
+            return tooltip;
         }
+        
         return this.label;
     }
 
     private getIcon(): vscode.ThemeIcon {
         if (this.variableName) {
-            return new vscode.ThemeIcon('symbol-variable');
+            return new vscode.ThemeIcon('symbol-variable', new vscode.ThemeColor('symbolIcon.variableForeground'));
         }
         if (this.environment) {
+            // Different icons for different environments
+            const envName = this.environment.name.toLowerCase();
+            
+            if (envName === 'default' || envName === '.env') {
+                return new vscode.ThemeIcon('file-code');
+            } else if (envName.includes('prod')) {
+                return new vscode.ThemeIcon('lock', new vscode.ThemeColor('errorForeground'));
+            } else if (envName.includes('dev')) {
+                return new vscode.ThemeIcon('beaker', new vscode.ThemeColor('notificationsInfoIcon.foreground'));
+            } else if (envName.includes('staging') || envName.includes('stage')) {
+                return new vscode.ThemeIcon('rocket', new vscode.ThemeColor('notificationsWarningIcon.foreground'));
+            } else if (envName.includes('test')) {
+                return new vscode.ThemeIcon('flask', new vscode.ThemeColor('testing.iconPassed'));
+            }
             return new vscode.ThemeIcon('file');
         }
-        return new vscode.ThemeIcon('folder');
+        return new vscode.ThemeIcon('folder-opened');
     }
 
     private getContextValue(): string {
@@ -59,13 +97,21 @@ export class EnvironmentTreeItem extends vscode.TreeItem {
 }
 
 export class EnvironmentVariablesProvider implements vscode.TreeDataProvider<EnvironmentTreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<EnvironmentTreeItem | undefined | void> = new vscode.EventEmitter<EnvironmentTreeItem | undefined | void>();
-    readonly onDidChangeTreeData: vscode.Event<EnvironmentTreeItem | undefined | void> = this._onDidChangeTreeData.event;
+    private static readonly MAX_LABEL_LENGTH = 50;
+    private static readonly MAX_DESCRIPTION_LENGTH = 30;
+    private static readonly TRUNCATE_SUFFIX = '...';
+
+    private _onDidChangeTreeData: vscode.EventEmitter<EnvironmentTreeItem | undefined | void> = 
+        new vscode.EventEmitter<EnvironmentTreeItem | undefined | void>();
+    readonly onDidChangeTreeData: vscode.Event<EnvironmentTreeItem | undefined | void> = 
+        this._onDidChangeTreeData.event;
+
+    private expansionState: Map<string, boolean> = new Map();
 
     constructor(private environmentManager: EnvironmentManager) {
         // Listen for environment changes
-        this.environmentManager.setEnvironmentsChangedCallback(() => {
-            this._onDidChangeTreeData.fire();
+        this.environmentManager.addEnvironmentsChangedCallback(() => {
+            this.refresh();
         });
     }
 
@@ -95,37 +141,54 @@ export class EnvironmentVariablesProvider implements vscode.TreeDataProvider<Env
         const environments = this.environmentManager.getEnvironments();
         const items: EnvironmentTreeItem[] = [];
 
-        // Group environments by type (might be useful for sorting/filtering)
-        const grouped = environments.reduce((acc, env) => {
-            const type = env.name === 'default' ? 'default' : 'other';
-            if (!acc[type]) {acc[type] = [];}
-            acc[type].push(env);
-            return acc;
-        }, {} as Record<string, Environment[]>);
-
-        // Add default environment first
-        if (grouped.default && grouped.default.length > 0) {
-            grouped.default.forEach(env => {
-                items.push(new EnvironmentTreeItem(
-                    `Default Environment (${Object.keys(env.variables).length} vars)`,
-                    vscode.TreeItemCollapsibleState.Collapsed,
-                    env
-                ));
-            });
+        // Check if no environments found
+        if (environments.length === 0) {
+            const emptyItem = new EnvironmentTreeItem(
+                'No .env files found',
+                vscode.TreeItemCollapsibleState.None
+            );
+            emptyItem.description = 'Create a .env file in your workspace';
+            emptyItem.iconPath = new vscode.ThemeIcon('info');
+            emptyItem.contextValue = 'empty';
+            return [emptyItem];
         }
 
-        // Add other environments
-        if (grouped.other && grouped.other.length > 0) {
-            grouped.other.forEach(env => {
-                const varCount = Object.keys(env.variables).length;
-                const label = `${env.name.charAt(0).toUpperCase() + env.name.slice(1)} (${varCount} vars)`;
-                items.push(new EnvironmentTreeItem(
-                    label,
-                    vscode.TreeItemCollapsibleState.Collapsed,
-                    env
-                ));
-            });
-        }
+        // Sort environments: default first, then alphabetically
+        const sortedEnvironments = environments.sort((a, b) => {
+            if (a.name === 'default') { return -1; }
+            if (b.name === 'default') { return 1; }
+            return a.name.localeCompare(b.name);
+        });
+
+        // Create tree items
+        sortedEnvironments.forEach(env => {
+            const varCount = Object.keys(env.variables).length;
+            
+            // Create label
+            const label = varCount === 1 
+                ? `${env.name} (1 var)`
+                : `${env.name} (${varCount} vars)`;
+
+            // Determine expansion state
+            let collapsibleState: vscode.TreeItemCollapsibleState;
+            if (varCount === 0) {
+                collapsibleState = vscode.TreeItemCollapsibleState.None;
+            } else {
+                const isExpanded = this.expansionState.get(env.name) ?? false;
+                collapsibleState = isExpanded 
+                    ? vscode.TreeItemCollapsibleState.Expanded 
+                    : vscode.TreeItemCollapsibleState.Collapsed;
+            }
+
+            const item = new EnvironmentTreeItem(label, collapsibleState, env);
+
+            // Add description for empty environments
+            if (varCount === 0) {
+                item.description = 'No variables';
+            }
+
+            items.push(item);
+        });
 
         return items;
     }
@@ -133,12 +196,24 @@ export class EnvironmentVariablesProvider implements vscode.TreeDataProvider<Env
     private async getEnvironmentVariables(environment: Environment): Promise<EnvironmentTreeItem[]> {
         const items: EnvironmentTreeItem[] = [];
 
-        // Get variable entries and sort them
-        const variables = Object.entries(environment.variables).sort(([a], [b]) => a.localeCompare(b));
+        // Get variable entries and sort them alphabetically
+        const variables = Object.entries(environment.variables)
+            .sort(([a], [b]) => a.localeCompare(b));
+
+        // Check if environment has no variables
+        if (variables.length === 0) {
+            const emptyItem = new EnvironmentTreeItem(
+                'No variables defined',
+                vscode.TreeItemCollapsibleState.None
+            );
+            emptyItem.iconPath = new vscode.ThemeIcon('warning');
+            emptyItem.contextValue = 'emptyEnvironment';
+            return [emptyItem];
+        }
 
         variables.forEach(([name, value]) => {
-            // Truncate long values for display
-            const displayValue = value.length > 50 ? value.substring(0, 47) + '...' : value;
+            // Truncate long values for display in label
+            const displayValue = this.truncateValue(value, EnvironmentVariablesProvider.MAX_LABEL_LENGTH);
 
             const item = new EnvironmentTreeItem(
                 `${name}: ${displayValue}`,
@@ -148,13 +223,87 @@ export class EnvironmentVariablesProvider implements vscode.TreeDataProvider<Env
                 value
             );
 
-            // Set description to show the value again (VS Code shows this next to label)
-            item.description = value;
-            item.tooltip = `${name}: ${value}`;
+            // Only add description if value is long (show character count)
+            if (value.length > EnvironmentVariablesProvider.MAX_LABEL_LENGTH) {
+                item.description = `(${value.length} chars)`;
+            }
 
             items.push(item);
         });
 
         return items;
+    }
+
+    private truncateValue(value: string, maxLength: number): string {
+        if (value.length <= maxLength) {
+            return value;
+        }
+        const truncateLength = maxLength - EnvironmentVariablesProvider.TRUNCATE_SUFFIX.length;
+        return value.substring(0, truncateLength) + EnvironmentVariablesProvider.TRUNCATE_SUFFIX;
+    }
+
+    /**
+     * Set expansion state for an environment
+     */
+    public setExpanded(envName: string, expanded: boolean): void {
+        this.expansionState.set(envName, expanded);
+    }
+
+    /**
+     * Get expansion state for an environment
+     */
+    public isExpanded(envName: string): boolean {
+        return this.expansionState.get(envName) ?? false;
+    }
+
+    /**
+     * Get total count of all variables across all environments
+     */
+    public getTotalVariableCount(): number {
+        const environments = this.environmentManager.getEnvironments();
+        return environments.reduce((total, env) => {
+            return total + Object.keys(env.variables).length;
+        }, 0);
+    }
+
+    /**
+     * Search for a variable by name across all environments
+     */
+    public async findVariable(variableName: string): Promise<{env: string, value: string}[]> {
+        const environments = this.environmentManager.getEnvironments();
+        const results: {env: string, value: string}[] = [];
+
+        environments.forEach(env => {
+            // FIXED: Use 'in' operator to check for key existence (handles empty strings)
+            if (variableName in env.variables) {
+                results.push({
+                    env: env.name,
+                    value: env.variables[variableName]
+                });
+            }
+        });
+
+        return results;
+    }
+
+    /**
+     * Get all unique variable names across all environments
+     */
+    public getUniqueVariableNames(): string[] {
+        const environments = this.environmentManager.getEnvironments();
+        const nameSet = new Set<string>();
+
+        environments.forEach(env => {
+            Object.keys(env.variables).forEach(name => nameSet.add(name));
+        });
+
+        return Array.from(nameSet).sort();
+    }
+
+    /**
+     * Dispose of resources
+     */
+    public dispose(): void {
+        this._onDidChangeTreeData.dispose();
     }
 }

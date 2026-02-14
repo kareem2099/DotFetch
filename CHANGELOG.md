@@ -4,6 +4,104 @@ All notable changes to the "dotfetch" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.1.0] - 2026-02-14
+
+### ✨ Added (Critical Bug Fixes & Security)
+
+#### Security Enhancements
+- **Content Security Policy (CSP)** with nonce-based script protection and 'unsafe-inline' fallback
+- **Stricter URL Validation** with protocol enforcement (http/https only)
+- **Safe Variable Substitution** with null/undefined handling and circular reference detection
+
+#### Request Management
+- **Request Cancellation** with AbortController for in-flight requests
+- **Response Size Limits** (10MB max, 1MB display threshold with truncation)
+- **Query Parameter Management** with proper URL encoding and decoding
+- **Advanced cURL Export** with smart JSON/string escaping and multiline formatting
+- **cURL Import** with comprehensive parsing
+
+#### Environment System Improvements
+- **Multiple File Watcher Callbacks** for reactive updates
+- **Debounced File Watching** (300ms) to prevent cascading reloads
+- **Enhanced .env Parsing**:
+  - Support for all `.env*` patterns (`.env.local`, `.env.development`, etc.)
+  - Multiline value support with quote handling
+  - Escape sequence support (`\\n`, `\\r`, `\\t`, `\\\\`, `\\'`, `\\\"`)
+  - Variable name validation with regex enforcement
+- **Nested Variable Substitution** (up to 10 iterations with circular reference detection)
+- **Helper Methods**: `getAllVariableNames()`, `hasVariable()`, `getVariable()`, `getUniqueVariableNames()`
+- **Tree Expansion State** persistence for environments and collections
+
+#### UI/UX Enhancements
+- **Keyboard Shortcuts**:
+  - Ctrl/Cmd + Enter: Send request
+  - Escape: Close modals
+  - Ctrl/Cmd + S: Save request
+  - Ctrl/Cmd + K: Clear form
+- **Collection Management**:
+  - Delete collections with confirmation dialog
+  - Delete individual requests with instant feedback
+  - Collection expansion state preservation
+- **Preview Debouncing** with `isUpdatingPreview` flag (prevents excessive updates)
+- **Environment Tree Visual Indicators**:
+  - Color-coded icons (production=lock/red, dev=beaker/blue, staging=rocket/yellow, test=flask/green)
+  - Markdown tooltips showing environment details
+  - Empty state messages with helpful hints
+  - Long value truncation with character count
+- **Settings Tab** with timeout configuration (1-300000ms range validation)
+- **Modal Improvements**:
+  - Close buttons (×) with proper ARIA labels
+  - Modal headers with titles
+  - Keyboard navigation support
+
+#### Code Quality & Logging
+- **Comprehensive Logging** across extension and webview with [INFO], [WARN], [ERROR] prefixes
+- **Improved Error Handling** for:
+  - DNS lookup failures (ENOTFOUND)
+  - Connection refused (ECONNREFUSED)
+  - Request timeouts (ECONNABORTED)
+  - Detailed error messages for debugging
+- **Proper Type Handling** with safe null/undefined checks throughout codebase
+- **Output Channel** for debugging with request/response details
+
+#### Accessibility (WCAG Compliance)
+- **ARIA Labels** on all interactive elements
+- **ARIA Roles** for dialogs (role="dialog"), tabs (role="tab"), alerts (role="alert")
+- **Semantic HTML** with proper form elements (textarea, input, select)
+- **Live Regions** for dynamic content updates (aria-live="assertive")
+- **Modal Focus Management** with close buttons
+
+#### Form & Input Improvements
+- **Textarea Elements** replacing contenteditable for better stability
+- **Proper Input Validation** with user feedback
+- **Value-based Properties** (`.value` instead of `.textContent`)
+- **Spell Check Disabled** for code inputs (spellcheck="false")
+- **Placeholder Text** with helpful examples
+
+### 🐛 Fixed
+- State loading race condition (webview ready signal before state send)
+- Header key validation preventing invalid characters
+- Contenteditable data loss and cursor issues
+- Response display truncation for very large payloads (500KB+)
+- Circular variable reference detection and loop prevention
+- File permission error handling (EACCES) in environment parsing
+- Unclosed multiline value handling at end of file
+
+### 🎨 Styling Updates
+- **Modal Styles**: Headers, footers, close buttons
+- **Button Variants**: Primary (blue) and cancel (gray) with hover states
+- **Settings UI**: Proper input styling and validation feedback
+- **Response Placeholder**: Loading state and empty state styles
+- **Section Headers**: Clear visual hierarchy with spacing
+- **Textarea/Input Styles**: Proper sizing, focus states, and colors
+- **Environment Indicators**: Color-matched to icon themes
+
+### 📚 Documentation
+- Comprehensive README for v1.1.0 features
+- Detailed CHANGELOG tracking all improvements
+- Inline code comments for complex logic
+- Accessibility guidelines in code
+
 ## [1.0.0] - 2026-01-15
 
 ### ✨ Added

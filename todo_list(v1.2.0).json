@@ -1,0 +1,664 @@
+{
+  "metadata": {
+    "version": "1.2.0",
+    "release_type": "Feature Release",
+    "start_date": "TBD",
+    "target_release_date": "TBD",
+    "sprint_duration_weeks": 9,
+    "status": "planning"
+  },
+
+  "project_overview": {
+    "title": "DotFetch v1.2.0 - Authentication & Core Feature Enhancements",
+    "description": "This release focuses on delivering essential authentication mechanisms, improving request management workflows, and enhancing user experience with search, themes, and export capabilities. The scope is intentionally limited to ensure high code quality and maintainability.",
+    "scope_statement": "12 feature tasks targeting authentication, core features, UI polish, and data export. Zero breaking changes to v1.1.0 API.",
+    "success_criteria": [
+      "All 12 features implemented and tested",
+      "Zero regression in v1.1.0 functionality",
+      "TypeScript compilation passes without warnings",
+      "Logger system operational with isDevelopment flag",
+      "Complete documentation and CHANGELOG updates",
+      "Backward compatibility verified with v1.1.0 collections"
+    ]
+  },
+
+  "release_roadmap": {
+    "phase_1_authentication": {
+      "duration": "Phase 1 - ~2 weeks",
+      "focus": "User authentication mechanisms",
+      "tasks": [
+        "T201 - Basic Authentication (HTTP Basic Auth RFC 7617)",
+        "T202 - Bearer Token Authentication (OAuth 2.0 Bearer Tokens RFC 6750)"
+      ],
+      "deliverables": [
+        "Authentication selector dropdown (Basic/Bearer/None)",
+        "Credential input UI with secure field handling",
+        "Automatic Authorization header generation",
+        "Storage of credentials in request objects"
+      ],
+      "acceptance_criteria": [
+        "Basic Auth produces RFC 7617 compliant headers",
+        "Bearer tokens formatted as 'Authorization: Bearer <token>'",
+        "Credentials persisted with request templates",
+        "UI prevents accidental credential exposure in logs"
+      ]
+    },
+
+    "phase_2_core_features": {
+      "duration": "Phase 2 - ~1 week",
+      "focus": "Core request and history management enhancements",
+      "tasks": [
+        "T203 - JSON Response Syntax Highlighting",
+        "T204 - Request Templates System",
+        "T205 - Automatic Retry Logic",
+        "T206 - History Search and Filtering"
+      ],
+      "deliverables": [
+        "Syntax highlighting engine for JSON responses",
+        "Request template save/load mechanism",
+        "Exponential backoff retry implementation",
+        "Full-text search with date range filtering"
+      ],
+      "acceptance_criteria": [
+        "JSON responses display with proper color coding",
+        "Templates persist across sessions",
+        "Retry attempts follow exponential backoff (1s, 2s, 4s)",
+        "Search filters history in real-time"
+      ]
+    },
+
+    "phase_3_refinement": {
+      "duration": "Phase 3 - ~2 weeks",
+      "focus": "UI polish, export capabilities, and quality assurance",
+      "tasks": [
+        "T207 - Request Annotations",
+        "T208 - Payload Size Warnings",
+        "T209 - Dark Theme Implementation",
+        "T210 - Error Message Improvements",
+        "T211 - Keyboard Shortcut Configuration",
+        "T212 - Collection Export"
+      ],
+      "deliverables": [
+        "Request notes/comments field",
+        "Payload size indicators and warnings",
+        "Dark theme toggle with system preference detection",
+        "Enhanced error messaging with contextual help",
+        "Customizable keyboard shortcuts configuration",
+        "JSON export for collections"
+      ],
+      "acceptance_criteria": [
+        "Notes persist with request data",
+        "Size warnings trigger at 1MB and 5MB thresholds",
+        "Dark theme respects @media (prefers-color-scheme)",
+        "Error messages include actionable solutions",
+        "Shortcut conflicts prevented",
+        "Exported JSON is valid and importable"
+      ]
+    },
+
+    "phase_4_testing": {
+      "duration": "Phase 4 - ~1 week",
+      "focus": "Integration testing, quality assurance, and documentation",
+      "tasks": [
+        "Manual testing across all features",
+        "Regression testing against v1.1.0",
+        "Integration testing with logger system",
+        "Documentation and CHANGELOG preparation",
+        "Performance profiling"
+      ],
+      "deliverables": [
+        "Test report covering all 12 features",
+        "No regression test failures",
+        "CHANGELOG with feature descriptions",
+        "Updated README with new capabilities"
+      ]
+    }
+  },
+
+  "detailed_requirements": {
+    "T201": {
+      "epic": "Authentication",
+      "title": "Basic Authentication Implementation",
+      "priority": "CRITICAL",
+      "story_points": 3,
+      "estimated_hours": 1.5,
+      "description": "Implement HTTP Basic Authentication (RFC 7617) support with automatic Base64 encoding and Authorization header generation.",
+      "acceptance_criteria": [
+        "Username and password input fields in request builder",
+        "Enable/disable checkbox for Basic Auth",
+        "Automatic encoding of credentials to Base64",
+        "Authorization header set to 'Basic <base64(username:password)>'",
+        "Credentials stored with request object",
+        "Compatible with authentication templates"
+      ],
+      "technical_specifications": {
+        "encoding": "RFC 7617 - HTTP Basic Authentication",
+        "header_format": "Authorization: Basic [base64]",
+        "implementation_location": [
+          "media/index.html - UI form fields",
+          "media/script.js - Encoding logic",
+          "media/styles.css - Field styling"
+        ],
+        "dependencies": ["T204 - Request Templates"],
+        "security_notes": "Credentials transmitted only via HTTPS. Use logger system to prevent credential exposure."
+      },
+      "definition_of_done": [
+        "Code passes TypeScript compilation",
+        "Manual testing on HTTP and HTTPS endpoints",
+        "Documentation updated",
+        "No security warnings in code review",
+        "Backward compatible with v1.1.0"
+      ]
+    },
+
+    "T202": {
+      "epic": "Authentication",
+      "title": "Bearer Token Authentication Implementation",
+      "priority": "CRITICAL",
+      "story_points": 2,
+      "estimated_hours": 1,
+      "description": "Implement OAuth 2.0 Bearer Token support (RFC 6750) with automatic header formatting.",
+      "acceptance_criteria": [
+        "Token input field in request builder",
+        "Enable/disable toggle for Bearer auth",
+        "Automatic header formatting as 'Authorization: Bearer <token>'",
+        "Token persisted with request",
+        "Works with request templates"
+      ],
+      "technical_specifications": {
+        "standard": "RFC 6750 - OAuth 2.0 Bearer Token Usage",
+        "header_format": "Authorization: Bearer [token]",
+        "implementation_location": [
+          "media/index.html - Token input field",
+          "media/script.js - Header generation",
+          "media/styles.css - Styling"
+        ],
+        "ui_pattern": "Dropdown selector between Basic/Bearer/None",
+        "validation": "Empty token validation"
+      },
+      "definition_of_done": [
+        "Code passes TypeScript compilation",
+        "Tested with real OAuth 2.0 providers",
+        "Documentation complete",
+        "Backward compatible with v1.1.0"
+      ]
+    },
+
+    "T203": {
+      "epic": "Core Features",
+      "title": "JSON Response Syntax Highlighting",
+      "priority": "HIGH",
+      "story_points": 5,
+      "estimated_hours": 2,
+      "description": "Implement syntax highlighting for JSON responses with color coding and bracket matching.",
+      "acceptance_criteria": [
+        "JSON objects display with syntax colors",
+        "Keys and values properly distinguished",
+        "Bracket matching for nested structures",
+        "Proper handling of null, boolean, and numeric types",
+        "Performance acceptable for responses up to 10MB",
+        "Responsive to dark/light theme changes"
+      ],
+      "technical_specifications": {
+        "approach": "CSS-based highlighting with semantic HTML markup",
+        "alternative_approach": "Consider Prism.js or highlight.js for advanced features",
+        "browser_compatibility": "All modern browsers (Chrome, Firefox, Safari, Edge)",
+        "performance_targets": "< 100ms highlighting time for 1MB JSON",
+        "implementation_location": [
+          "media/script.js - Highlighting logic",
+          "media/styles.css - Color definitions",
+          "media/index.html - Response display area"
+        ]
+      },
+      "definition_of_done": [
+        "Syntax highlighting renders correctly",
+        "Performance meets targets",
+        "Theme switching updates colors",
+        "No XSS vulnerabilities in HTML generation",
+        "Documentation of color scheme"
+      ]
+    },
+
+    "T204": {
+      "epic": "Core Features",
+      "title": "Request Templates System",
+      "priority": "HIGH",
+      "story_points": 5,
+      "estimated_hours": 2,
+      "description": "Implement request templates functionality allowing users to save and reuse request patterns.",
+      "acceptance_criteria": [
+        "Save current request as template",
+        "Templates stored in special 'Templates' collection",
+        "Quick-load templates into current request form",
+        "Template metadata includes creation date and usage count",
+        "Templates support all request attributes (method, headers, body, auth)"
+      ],
+      "technical_specifications": {
+        "storage": "Reuse existing collections system",
+        "special_collection": "'Templates' - system collection",
+        "ui_changes": [
+          "Add 'Save as Template' button in request builder",
+          "Add template selector dropdown",
+          "Show template metadata on hover"
+        ],
+        "backward_compatibility": "Existing collections unaffected",
+        "implementation_location": [
+          "media/script.js - Template save/load logic",
+          "media/index.html - UI components",
+          "media/styles.css - Styling"
+        ]
+      },
+      "definition_of_done": [
+        "Templates persist across sessions",
+        "Save/load operations work correctly",
+        "Metadata tracking functional",
+        "UI responsive and intuitive",
+        "Documentation updated"
+      ]
+    },
+
+    "T205": {
+      "epic": "Core Features",
+      "title": "Automatic Request Retry with Backoff",
+      "priority": "HIGH",
+      "story_points": 5,
+      "estimated_hours": 2,
+      "description": "Implement automatic request retry logic with exponential backoff for transient network failures.",
+      "acceptance_criteria": [
+        "Retry count configurable per request (0-5)",
+        "Exponential backoff delay between retries",
+        "Automatic retry on specific error codes: ECONNREFUSED, ENOTFOUND, ETIMEDOUT",
+        "User can cancel ongoing retries",
+        "Retry attempts logged for debugging"
+      ],
+      "technical_specifications": {
+        "retry_errors": [
+          "ECONNREFUSED - Connection refused",
+          "ENOTFOUND - DNS resolution failed",
+          "ETIMEDOUT - Request timeout",
+          "ECONNABORTED - Connection aborted"
+        ],
+        "backoff_strategy": "Linear: delay = 1s * attempt_number",
+        "max_retries": 5,
+        "implementation_location": [
+          "src/extension.ts - Retry loop logic",
+          "media/script.js - UI controls",
+          "src/logger.ts - Logging retry attempts"
+        ],
+        "user_communication": "Show 'Retry attempt X of Y' in UI"
+      },
+      "definition_of_done": [
+        "Retry logic correctly implements backoff",
+        "Error detection works as specified",
+        "User can configure retry count",
+        "Logging captures retry attempts",
+        "No regression in normal request flow"
+      ]
+    },
+
+    "T206": {
+      "epic": "Core Features",
+      "title": "History Search and Filtering",
+      "priority": "HIGH",
+      "story_points": 3,
+      "estimated_hours": 1.5,
+      "description": "Implement search and filtering capabilities for request history with real-time updates.",
+      "acceptance_criteria": [
+        "Search field filters history by URL, method, and status code",
+        "Date range filter for history entries",
+        "Search results update in real-time as user types",
+        "Display count of matching results",
+        "Clear filter button to reset search"
+      ],
+      "technical_specifications": {
+        "search_scope": [
+          "URL matching (substring)",
+          "HTTP method (exact)",
+          "Response status code (exact)"
+        ],
+        "filter_options": [
+          "Date range selector",
+          "Status code filter (2xx, 4xx, 5xx, etc)"
+        ],
+        "performance": "Filter operations complete in < 50ms",
+        "implementation_location": [
+          "media/script.js - Filter logic",
+          "media/index.html - Search UI",
+          "media/styles.css - Styling"
+        ]
+      },
+      "definition_of_done": [
+        "Search functionality works correctly",
+        "Performance meets targets",
+        "UI intuitive and responsive",
+        "Date picker functional across browsers",
+        "Documentation complete"
+      ]
+    },
+
+    "T207": {
+      "epic": "Refinement",
+      "title": "Request Annotations (Notes/Comments)",
+      "priority": "MEDIUM",
+      "story_points": 2,
+      "estimated_hours": 1,
+      "description": "Add optional annotation field for request documentation and context.",
+      "acceptance_criteria": [
+        "Textarea field for request notes in request builder",
+        "Notes persist with request data",
+        "Notes visible in request history on hover",
+        "Support for multiline text",
+        "Notes included in exported collections"
+      ],
+      "technical_specifications": {
+        "storage": "Part of request object",
+        "display": "Tooltip on history item hover",
+        "character_limit": "1000 characters",
+        "implementation_location": [
+          "media/index.html - Notes textarea",
+          "media/script.js - Persistence logic",
+          "media/styles.css - Styling"
+        ]
+      },
+      "definition_of_done": [
+        "Notes field renders correctly",
+        "Persistence works across sessions",
+        "Tooltip displays on history items",
+        "Export includes notes data"
+      ]
+    },
+
+    "T208": {
+      "epic": "Refinement",
+      "title": "Response Payload Size Warnings",
+      "priority": "MEDIUM",
+      "story_points": 1,
+      "estimated_hours": 0.5,
+      "description": "Display warnings for large response payloads to alert users of potential performance issues.",
+      "acceptance_criteria": [
+        "Info badge when response > 1MB",
+        "Warning badge when response > 5MB",
+        "Size displayed in KB/MB format",
+        "No blocking - user can still view response"
+      ],
+      "technical_specifications": {
+        "thresholds": {
+          "info": "1 MB",
+          "warning": "5 MB"
+        },
+        "display_location": "Response info area",
+        "implementation_location": [
+          "src/extension.ts - Size calculation (already exists)",
+          "media/script.js - Warning display logic"
+        ]
+      },
+      "definition_of_done": [
+        "Warnings display correctly",
+        "Size formatting accurate",
+        "No performance impact"
+      ]
+    },
+
+    "T209": {
+      "epic": "Refinement",
+      "title": "Dark Theme Support",
+      "priority": "MEDIUM",
+      "story_points": 3,
+      "estimated_hours": 1.5,
+      "description": "Implement dark theme with automatic detection of system preference.",
+      "acceptance_criteria": [
+        "Settings tab includes theme toggle",
+        "Theme preference persisted in settings",
+        "Automatic detection of system dark mode preference",
+        "Smooth transition between themes",
+        "All UI components properly styled for both themes"
+      ],
+      "technical_specifications": {
+        "detection": "@media (prefers-color-scheme: dark)",
+        "css_approach": "CSS custom properties (variables) for colors",
+        "themes": [
+          "Light - follows VS Code light theme",
+          "Dark - follows VS Code dark theme"
+        ],
+        "implementation_location": [
+          "media/styles.css - Theme color definitions",
+          "media/script.js - Theme toggle logic",
+          "media/index.html - Settings control"
+        ],
+        "accessibility": "Sufficient color contrast for WCAG AA compliance"
+      },
+      "definition_of_done": [
+        "Both themes render correctly",
+        "System preference respected",
+        "Toggle works smoothly",
+        "All components styled appropriately",
+        "Accessibility standards met"
+      ]
+    },
+
+    "T210": {
+      "epic": "Refinement",
+      "title": "Enhanced Error Messages",
+      "priority": "HIGH",
+      "story_points": 2,
+      "estimated_hours": 1,
+      "description": "Improve error messages with actionable suggestions and helpful context.",
+      "acceptance_criteria": [
+        "User-friendly error messages instead of raw technical errors",
+        "Suggestions for common issues (DNS, timeout, auth)",
+        "Copy-to-clipboard button for error details",
+        "Links to documentation where relevant"
+      ],
+      "technical_specifications": {
+        "error_categories": {
+          "ENOTFOUND": "DNS resolution failed - Check domain spelling",
+          "ECONNREFUSED": "Connection refused - Check host and port",
+          "ETIMEDOUT": "Request timeout - Check timeout settings",
+          "Authentication": "Auth failed - Verify credentials"
+        },
+        "implementation_location": [
+          "src/extension.ts - Error message generation",
+          "media/script.js - Error display UI"
+        ],
+        "logger_integration": "Log raw errors to logger system"
+      },
+      "definition_of_done": [
+        "Error messages clear and helpful",
+        "Copy button functional",
+        "Links work correctly",
+        "No sensitive data exposed in messages"
+      ]
+    },
+
+    "T211": {
+      "epic": "Refinement",
+      "title": "Customizable Keyboard Shortcuts",
+      "priority": "MEDIUM",
+      "story_points": 5,
+      "estimated_hours": 2,
+      "description": "Allow users to customize keyboard shortcuts for common operations.",
+      "acceptance_criteria": [
+        "Settings panel shows all available shortcuts",
+        "Users can modify shortcut key combinations",
+        "Validation prevents conflicting shortcuts",
+        "Reset to defaults option available",
+        "Shortcuts persist across sessions"
+      ],
+      "technical_specifications": {
+        "customizable_actions": [
+          "Send Request (default: Ctrl+Enter)",
+          "Close Modal (default: Escape)",
+          "Save Request (default: Ctrl+S)",
+          "Clear Form (default: Ctrl+K)"
+        ],
+        "validation": "Prevent duplicate key bindings",
+        "storage": "settings object",
+        "implementation_location": [
+          "media/index.html - Settings UI",
+          "media/script.js - Shortcut mapping and validation"
+        ]
+      },
+      "definition_of_done": [
+        "Shortcuts editable in settings",
+        "Validation works correctly",
+        "Changes persist",
+        "Reset functionality works",
+        "Shortcuts execute assigned actions"
+      ]
+    },
+
+    "T212": {
+      "epic": "Data Export",
+      "title": "Collection Export to JSON",
+      "priority": "HIGH",
+      "story_points": 2,
+      "estimated_hours": 1,
+      "description": "Enable exporting request collections as portable JSON files for backup and sharing.",
+      "acceptance_criteria": [
+        "Export button on each collection",
+        "Exported JSON includes all requests and metadata",
+        "Downloaded file named appropriately (collection-name-YYYY-MM-DD.json)",
+        "Exported JSON is valid and can be re-imported"
+      ],
+      "technical_specifications": {
+        "export_format": "JSON array of request objects",
+        "metadata_included": [
+          "Collection name and creation date",
+          "Request count",
+          "Export timestamp"
+        ],
+        "file_naming": "[collection-name]-[date].json",
+        "implementation_location": [
+          "media/script.js - Export logic",
+          "media/index.html - Export button"
+        ],
+        "download_mechanism": "Blob + download link"
+      },
+      "definition_of_done": [
+        "Export produces valid JSON",
+        "File downloads with correct name",
+        "Metadata preserved",
+        "Re-import functionality verified"
+      ]
+    }
+  },
+
+  "technical_architecture": {
+    "component_changes": {
+      "media_index_html": "Add auth fields, settings controls, search/filter UI, export buttons",
+      "media_script_js": "Implement auth logic, template system, retry loop, search filtering, export functionality",
+      "media_styles_css": "Theme variables, dark mode styles, new UI component styling",
+      "src_extension_ts": "Retry implementation, enhanced error handling, size warning logic",
+      "src_logger_ts": "Enhanced logging for retry attempts and auth operations"
+    },
+    "external_dependencies": [
+      "No new npm packages - use existing Axios and VS Code APIs"
+    ],
+    "backward_compatibility": "Full backward compatibility with v1.1.0 collections and settings",
+    "performance_targets": {
+      "json_highlighting": "< 100ms for 1MB responses",
+      "history_search": "< 50ms filter operations",
+      "theme_switch": "Instant (CSS variables)"
+    }
+  },
+
+  "quality_assurance": {
+    "testing_strategy": [
+      "Manual functional testing for each feature",
+      "Regression testing against v1.1.0 scenarios",
+      "Performance testing on large history datasets",
+      "Cross-browser testing (Chrome, Firefox, Safari, Edge)",
+      "Integration testing with logger system"
+    ],
+    "code_review_checklist": [
+      "TypeScript strict mode compliance",
+      "No console.log - use logger system only",
+      "Logger isDevelopment flag implemented",
+      "Security review for auth token handling",
+      "Performance profiling for new features",
+      "Accessibility compliance (WCAG AA)",
+      "Documentation complete"
+    ]
+  },
+
+  "release_criteria": {
+    "must_have": [
+      "All 12 features implemented and tested",
+      "Zero regression against v1.1.0",
+      "TypeScript compilation succeeds (exit code 0)",
+      "Logger system operational with isDevelopment flag",
+      "Complete CHANGELOG with all features documented",
+      "Version updated to 1.2.0 in package.json",
+      "No security vulnerabilities identified"
+    ],
+    "should_have": [
+      "Performance benchmarks documented",
+      "Accessibility compliance verified",
+      "Cross-browser testing completed",
+      "User documentation updated in README"
+    ],
+    "nice_to_have": [
+      "Demo video of new features",
+      "Migration guide for existing users"
+    ]
+  },
+
+  "risk_assessment": {
+    "low_risk": [
+      "Bearer token implementation - simple header formatting",
+      "Response size warnings - leverages existing size calculation",
+      "Dark theme - isolated CSS variables"
+    ],
+    "medium_risk": [
+      "Retry logic - potential for unintended retries if error detection too broad",
+      "JSON highlighting - performance impact on large responses",
+      "Keyboard shortcut customization - potential conflict issues"
+    ],
+    "mitigation_strategies": [
+      "Thorough testing of error detection patterns",
+      "Performance profiling before release",
+      "Comprehensive shortcut conflict validation"
+    ]
+  },
+
+  "documentation_requirements": {
+    "readme_updates": [
+      "Authentication features section",
+      "Request templates usage",
+      "Retry configuration",
+      "Dark theme information"
+    ],
+    "changelog_updates": [
+      "Feature descriptions for all 12 items",
+      "Known limitations if any",
+      "Migration notes from v1.1.0"
+    ],
+    "inline_code_comments": [
+      "Auth logic documentation",
+      "Retry algorithm explanation",
+      "Export format specification"
+    ]
+  },
+
+  "effort_estimation": {
+    "total_hours": 18.5,
+    "breakdown": {
+      "T201": 1.5,
+      "T202": 1.0,
+      "T203": 2.0,
+      "T204": 2.0,
+      "T205": 2.0,
+      "T206": 1.5,
+      "T207": 1.0,
+      "T208": 0.5,
+      "T209": 1.5,
+      "T210": 1.0,
+      "T211": 2.0,
+      "T212": 1.0,
+      "testing_and_qc": 4.0,
+      "documentation": 2.0
+    },
+    "buffer": "25% (4.6 hours) for unforeseen issues",
+    "total_with_buffer": 23.1
+  }
+}

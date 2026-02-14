@@ -2,7 +2,7 @@
   "name": "dotfetch",
   "displayName": "DotFetch",
   "description": "A professional HTTP client extension for VS Code with environment variables, collections, and cURL support",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "FreeRave",
   "repository": {
     "type": "git",
@@ -17,35 +17,61 @@
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "dotfetch.copyVariable",
-        "title": "Copy Variable",
-        "icon": "$(copy)"
-      },
-      {
-        "command": "dotfetch.refreshEnvironments",
-        "title": "Refresh Environments",
-        "icon": "$(refresh)"
-      }
-    ],
-    "menus": {
-      "view/title": [
-        {
-          "command": "dotfetch.refreshEnvironments",
-          "when": "view == dotfetchEnvironments",
-          "group": "navigation"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "dotfetch.copyVariable",
-          "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
-          "group": "7_modification@1"
-        }
-      ]
-    },
+    "contributes": {
+        "commands": [
+            {
+                "command": "dotfetch.copyVariable",
+                "title": "Copy Variable",
+                "icon": "$(copy)"
+            },
+            {
+                "command": "dotfetch.copyVariableName",
+                "title": "Copy Variable Name"
+            },
+            {
+                "command": "dotfetch.copyVariablePlaceholder",
+                "title": "Copy as {{VARIABLE}}"
+            },
+            {
+                "command": "dotfetch.searchVariable",
+                "title": "Search Variable"
+            },
+            {
+                "command": "dotfetch.showAllVariables",
+                "title": "Show All Variables"
+            },
+            {
+                "command": "dotfetch.refreshEnvironments",
+                "title": "Refresh Environments",
+                "icon": "$(refresh)"
+            }
+        ],
+        "menus": {
+            "view/title": [
+                {
+                    "command": "dotfetch.refreshEnvironments",
+                    "when": "view == dotfetchEnvironments",
+                    "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "dotfetch.copyVariable",
+                    "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "dotfetch.copyVariableName",
+                    "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
+                    "group": "copy@1"
+                },
+                {
+                    "command": "dotfetch.copyVariablePlaceholder",
+                    "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
+                    "group": "copy@2"
+                }
+            ]
+        },
     "viewsContainers": {
       "activitybar": [
         {
@@ -82,7 +108,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "@types/vscode": "^1.106.0",
+    "@types/vscode": "^1.80.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "eslint": "^9.39.1",

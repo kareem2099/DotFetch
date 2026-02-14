@@ -1,6 +1,6 @@
-/* ---------------------------------------------------------
-   Global & Reset
---------------------------------------------------------- */
+/* ============================================================================
+   Global Variables & Reset
+   ============================================================================ */
 :root {
     --vscode-bg: #1e1e1e;
     --vscode-fg: #cccccc;
@@ -15,6 +15,10 @@
     --warning-text: #856404;
 }
 
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
@@ -26,18 +30,23 @@ body {
     font-size: 13px;
 }
 
-/* Custom Scrollbar */
+/* ============================================================================
+   Custom Scrollbar
+   ============================================================================ */
 ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
 }
+
 ::-webkit-scrollbar-track {
     background: #1e1e1e;
 }
+
 ::-webkit-scrollbar-thumb {
     background: #424242;
     border-radius: 5px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: #4f4f4f;
 }
@@ -47,9 +56,9 @@ button {
     font-family: inherit;
 }
 
-/* ---------------------------------------------------------
+/* ============================================================================
    App Header
---------------------------------------------------------- */
+   ============================================================================ */
 .app-header {
     display: flex;
     justify-content: space-between;
@@ -57,7 +66,7 @@ button {
     padding: 10px 20px;
     background: #252526;
     border-bottom: 1px solid var(--border-color);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .app-header h1 {
@@ -74,7 +83,7 @@ button {
 }
 
 .env-indicator {
-    padding: 2px 8px;
+    padding: 4px 10px;
     border-radius: 12px;
     font-size: 11px;
     font-weight: 600;
@@ -95,11 +104,11 @@ button {
     background: var(--accent-hover);
 }
 
-/* ---------------------------------------------------------
+/* ============================================================================
    Layout
---------------------------------------------------------- */
+   ============================================================================ */
 .main-content {
-    height: calc(100vh - 55px); /* Header height approx */
+    height: calc(100vh - 55px);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -113,9 +122,9 @@ button {
     box-sizing: border-box;
 }
 
-/* ---------------------------------------------------------
+/* ============================================================================
    Environment Selector
---------------------------------------------------------- */
+   ============================================================================ */
 .environment-selector {
     display: flex;
     align-items: center;
@@ -161,7 +170,9 @@ button {
 }
 
 @keyframes spin {
-    100% { transform: rotate(360deg); }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .env-status {
@@ -171,9 +182,9 @@ button {
     text-align: right;
 }
 
-/* ---------------------------------------------------------
+/* ============================================================================
    Tabs
---------------------------------------------------------- */
+   ============================================================================ */
 .tabs {
     display: flex;
     margin-bottom: 20px;
@@ -192,7 +203,7 @@ button {
 
 .tab-button:hover {
     color: #fff;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .tab-button.active {
@@ -210,13 +221,19 @@ button {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* ---------------------------------------------------------
+/* ============================================================================
    Forms & Inputs
---------------------------------------------------------- */
+   ============================================================================ */
 .request-section label {
     display: block;
     margin: 15px 0 5px;
@@ -245,7 +262,9 @@ select {
     font-size: 13px;
 }
 
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
     outline: none;
     border-color: var(--accent-color);
 }
@@ -255,9 +274,43 @@ textarea {
     min-height: 80px;
 }
 
-/* ---------------------------------------------------------
+/* ============================================================================
+   Specific Input Styles
+   ============================================================================ */
+.url-input {
+    width: 100%;
+    padding: 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--vscode-fg);
+    border-radius: 2px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.headers-textarea,
+.body-textarea {
+    width: 100%;
+    padding: 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--vscode-fg);
+    border-radius: 2px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.url-input:focus,
+.headers-textarea:focus,
+.body-textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+/* ============================================================================
    Previews & Validation
---------------------------------------------------------- */
+   ============================================================================ */
 .preview-hint {
     margin-top: 4px;
     font-size: 11px;
@@ -293,9 +346,9 @@ textarea {
     color: #ff6b6b;
 }
 
-/* ---------------------------------------------------------
+/* ============================================================================
    Query Parameters
---------------------------------------------------------- */
+   ============================================================================ */
 .query-params {
     margin: 10px 0;
     padding: 10px;
@@ -313,7 +366,10 @@ textarea {
     color: #888;
     font-size: 14px;
 }
-.remove-btn:hover { color: var(--error-color); }
+
+.remove-btn:hover {
+    color: var(--error-color);
+}
 
 #add-query-param {
     background: transparent;
@@ -322,11 +378,28 @@ textarea {
     padding: 4px 10px;
     font-size: 11px;
 }
-#add-query-param:hover { background: rgba(0,122,204,0.1); }
 
-/* ---------------------------------------------------------
+#add-query-param:hover {
+    background: rgba(0, 122, 204, 0.1);
+}
+
+.add-param-btn {
+    background: transparent;
+    color: var(--accent-color);
+    border: 1px dashed var(--accent-color);
+    padding: 6px 12px;
+    font-size: 11px;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.add-param-btn:hover {
+    background: rgba(0, 122, 204, 0.1);
+}
+
+/* ============================================================================
    Actions & Buttons
---------------------------------------------------------- */
+   ============================================================================ */
 .actions {
     margin-top: 20px;
     display: flex;
@@ -348,24 +421,101 @@ button {
     background: var(--accent-color);
     color: white;
 }
-#send:hover { background: var(--accent-hover); }
 
-#save-request, #validate-request {
+#send:hover {
+    background: var(--accent-hover);
+}
+
+#save-request,
+#validate-request {
     background: #3e3e42;
     color: #fff;
 }
-#save-request:hover, #validate-request:hover { background: #4e4e52; }
 
-#export-curl, #import-curl {
+#save-request:hover,
+#validate-request:hover {
+    background: #4e4e52;
+}
+
+#export-curl,
+#import-curl {
     background: transparent;
     border: 1px solid #555;
     color: #ccc;
 }
-#export-curl:hover, #import-curl:hover { border-color: #888; color: #fff; }
 
-/* ---------------------------------------------------------
+#export-curl:hover,
+#import-curl:hover {
+    border-color: #888;
+    color: #fff;
+}
+
+/* ============================================================================
+   Button Variants
+   ============================================================================ */
+.btn-primary {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+}
+
+.btn-secondary {
+    background: #3e3e42;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-secondary:hover {
+    background: #4e4e52;
+}
+
+.btn-primary-outline {
+    background: transparent;
+    color: var(--accent-color);
+    border: 1px solid var(--accent-color);
+    padding: 6px 12px;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-primary-outline:hover {
+    background: rgba(0, 122, 204, 0.1);
+}
+
+.btn-danger-outline {
+    background: transparent;
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+    padding: 6px 12px;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-danger-outline:hover {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+/* ============================================================================
    Response Section
---------------------------------------------------------- */
+   ============================================================================ */
 #response-section {
     margin-top: 20px;
 }
@@ -378,8 +528,13 @@ button {
     align-items: center;
 }
 
-.status-success { color: var(--success-color); }
-.status-error { color: var(--error-color); }
+.status-success {
+    color: var(--success-color);
+}
+
+.status-error {
+    color: var(--error-color);
+}
 
 .response-tabs {
     margin: 10px 0;
@@ -392,13 +547,15 @@ button {
     padding: 4px 12px;
     margin-right: -1px;
 }
+
 .response-tab-button.active {
     background: #3e3e42;
     color: #fff;
     border-color: #3e3e42;
 }
 
-#response-body, #response-headers {
+#response-body,
+#response-headers {
     background: #1e1e1e;
     border: 1px solid var(--border-color);
     padding: 10px;
@@ -410,9 +567,15 @@ button {
     font-size: 12px;
 }
 
-/* ---------------------------------------------------------
+.response-placeholder {
+    padding: 20px;
+    text-align: center;
+    font-style: italic;
+}
+
+/* ============================================================================
    History & Collections
---------------------------------------------------------- */
+   ============================================================================ */
 .history-item {
     background: #252526;
     padding: 10px;
@@ -420,7 +583,10 @@ button {
     cursor: pointer;
     transition: background 0.2s;
 }
-.history-item:hover { background: #2d2d30; }
+
+.history-item:hover {
+    background: #2d2d30;
+}
 
 .history-item .method {
     font-weight: bold;
@@ -434,21 +600,43 @@ button {
 }
 
 /* Method Colors */
-.GET { background: rgba(107, 185, 240, 0.2); color: #6bb9f0; }
-.POST { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
-.PUT { background: rgba(230, 126, 34, 0.2); color: #e67e22; }
-.DELETE { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
-.PATCH { background: rgba(155, 89, 182, 0.2); color: #9b59b6; }
+.GET {
+    background: rgba(107, 185, 240, 0.2);
+    color: #6bb9f0;
+}
+
+.POST {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+}
+
+.PUT {
+    background: rgba(230, 126, 34, 0.2);
+    color: #e67e22;
+}
+
+.DELETE {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+.PATCH {
+    background: rgba(155, 89, 182, 0.2);
+    color: #9b59b6;
+}
 
 .collection-item {
     padding: 12px;
     border-bottom: 1px solid var(--border-color);
 }
-.collection-item:hover { background: #2d2d30; }
 
-/* ---------------------------------------------------------
+.collection-item:hover {
+    background: #2d2d30;
+}
+
+/* ============================================================================
    Modals
---------------------------------------------------------- */
+   ============================================================================ */
 .modal {
     display: none;
     position: fixed;
@@ -457,7 +645,7 @@ button {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(2px);
 }
 
@@ -468,10 +656,13 @@ button {
     border: 1px solid var(--border-color);
     width: 400px;
     border-radius: 4px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
-.modal-content h3 { margin-top: 0; color: #fff; }
+.modal-content h3 {
+    margin-top: 0;
+    color: #fff;
+}
 
 .modal-content button {
     margin-top: 15px;
@@ -481,4 +672,404 @@ button {
 .modal-content .cancel {
     background: transparent;
     border: 1px solid #555;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.modal-body {
+    margin-bottom: 15px;
+}
+
+.modal-body label {
+    display: block;
+    margin: 10px 0 5px;
+    font-weight: 600;
+    color: #ddd;
+    font-size: 12px;
+}
+
+.modal-body input[type="text"],
+.modal-body select,
+.modal-body textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ============================================================================
+   Settings Page
+   ============================================================================ */
+.setting-item {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #ddd;
+}
+
+.setting-item input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.setting-hint {
+    display: block;
+    margin-top: 5px;
+    font-size: 11px;
+    color: #888;
+}
+
+/* ============================================================================
+   Section Headers
+   ============================================================================ */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.section-header h3 {
+    margin: 0;
+}
+
+/* ============================================================================
+   Environment Indicator Colors
+   ============================================================================ */
+.env-production {
+    background: rgba(220, 53, 69, 0.2);
+    color: #ff6b6b;
+}
+
+.env-development {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+}
+
+.env-staging {
+    background: rgba(241, 196, 15, 0.2);
+    color: #f1c40f;
+}
+
+/* ============================================================================
+   Utility Classes (Required for JS Refactoring)
+   ============================================================================ */
+.hidden {
+    display: none !important;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.gap-sm {
+    gap: 5px;
+}
+
+.mb-sm {
+    margin-bottom: 5px;
+}
+
+.ml-md {
+    margin-left: 8px;
+}
+
+.ml-lg {
+    margin-left: 20px;
+}
+
+.mt-sm {
+    margin-top: 5px;
+}
+
+.text-muted {
+    color: #888;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-error {
+    color: var(--error-color) !important;
+}
+
+.text-success {
+    color: var(--success-color) !important;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.no-bg-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+}
+
+/* ============================================================================
+   New Component Styles
+   ============================================================================ */
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: #333;
+    color: white;
+}
+
+/* Hover Effect for Request List */
+.request-item-row:hover {
+    background: #2d2d30;
+}
+
+/* Collection Header */
+.collection-header {
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ============================================================================
+   Utility Classes for Dynamic Styling
+   ============================================================================ */
+.flex-row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.flex-center-align {
+    display: flex;
+    align-items: center;
+}
+
+.flex-wrap-gap {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.header-flex {
+    display: flex;
+    align-items: center;
+    margin-bottom: 3px;
+}
+
+.url-span {
+    margin-left: 8px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.modal-visible {
+    display: block !important;
+}
+
+.preview-visible {
+    display: block;
+}
+
+.preview-hidden {
+    display: none;
+}
+
+.subheader-margin-left {
+    margin-left: 20px;
+    margin-top: 5px;
+}
+
+.item-padding {
+    padding: 5px 8px;
+}
+
+.item-font-small {
+    font-size: 0.9em;
+}
+
+/* Modal visibility states */
+.modal {
+    display: none;
+}
+
+.modal-visible {
+    display: block !important;
+}
+
+/* Request item hover effect */
+.request-item-hover {
+    background: #2d2d30;
+}
+
+/* Collection item styling */
+.collection-item {
+    margin-bottom: 5px;
+}
+
+/* Empty state messages */
+.empty-message {
+    padding: 10px;
+    color: #888;
+    text-align: center;
+}
+
+/* History/Collection metadata styling */
+.metadata-text {
+    font-size: 0.85em;
+    color: #888;
+}
+
+.metadata-separator {
+    margin: 0 5px;
+}
+
+.method-name-span {
+    margin-left: 8px;
+}
+
+.count-badge {
+    opacity: 0.6;
+}
+
+/* Unstyled buttons */
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+}
+
+.delete-collection-btn {
+    font-size: 12px;
+}
+
+.delete-request-btn {
+    font-size: 11px;
+}
+
+/* Status/Error message styling */
+.error-message {
+    color: #ff6b6b;
+}
+
+.success-message {
+    color: #28a745;
+}
+
+/* Input styling */
+.param-input {
+    flex: 1;
+}
+
+/* Response info styling */
+.status-badge-response {
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: #333;
+    color: white;
+}
+
+.duration-info {
+    margin-left: 10px;
+}
+
+/* Remove button styling */
+.remove-param-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+}
+
+/* Coming soon label */
+.coming-soon {
+    margin-left: 8px;
+    font-size: 0.85em;
+    opacity: 0.6;
+}
+
+/* Empty response message */
+.empty-response-text {
+    color: #888;
+}
+
+/* Modal/Panel hidden state */
+.hidden-element {
+    display: none;
+}
+
+/* Modal description text */
+.modal-description {
+    margin-bottom: 10px;
+    color: #aaa;
+    font-size: 12px;
 }

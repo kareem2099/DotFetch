@@ -3,43 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DotFetch</title>
+    <title>DotFetch - HTTP Client</title>
+    <!-- CSP will be injected by extension.ts -->
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+    <!-- App Header -->
     <div class="app-header">
         <h1>DotFetch - HTTP Client</h1>
         <div class="app-controls">
             <div class="environment-info">
-                <span id="env-indicator" class="env-indicator-none">No Environment</span>
+                <span id="env-indicator" class="env-indicator">No Environment</span>
             </div>
             <div class="global-actions">
-                <button id="toggle-variables" title="Toggle Variables Panel" class="toggle-btn">📋 Variables</button>
+                <button id="toggle-variables" 
+                        title="Toggle Variables Panel (Shows .env variables)" 
+                        class="toggle-btn"
+                        aria-label="Toggle environment variables panel">
+                    📋 Variables
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Main Content Area -->
     <div class="main-content" id="main-content">
-        <!-- Left Panel - Request Builder -->
         <div class="left-panel" id="request-builder">
 
             <!-- Environment Selector -->
             <div class="environment-selector">
                 <label for="environment">Environment:</label>
-                <select id="environment">
+                <select id="environment" aria-label="Select environment">
                     <option value="none">No Environment</option>
                 </select>
-                <button id="refresh-environments" title="Refresh Environments" class="refresh-btn">🔄</button>
+                <button id="refresh-environments" 
+                        title="Refresh Environments" 
+                        class="refresh-btn"
+                        aria-label="Refresh environment variables">
+                    🔄
+                </button>
                 <div class="env-status" id="env-status">
                     <span id="env-count">0 variables</span>
                 </div>
             </div>
 
             <!-- Validation Panel -->
-            <div class="validation-panel" id="validation-panel" style="display: none;">
+            <div class="validation-panel hidden-element" id="validation-panel" role="alert" aria-live="assertive">
                 <div class="validation-header">
-                    <span class="validation-icon">⚠️</span>
+                    <span class="validation-icon" aria-hidden="true">⚠️</span>
                     <span class="validation-title">Variable Validation</span>
                 </div>
                 <div class="validation-content" id="validation-content">
@@ -48,18 +59,43 @@
             </div>
 
             <!-- Tabs -->
-            <div class="tabs">
-                <button class="tab-button active" data-tab="request">Request</button>
-                <button class="tab-button" data-tab="history">History</button>
-                <button class="tab-button" data-tab="collections">Collections</button>
-                <button class="tab-button" data-tab="settings">Settings</button>
+            <div class="tabs" role="tablist">
+                <button class="tab-button active" 
+                        data-tab="request" 
+                        role="tab"
+                        aria-selected="true"
+                        aria-controls="request-tab">
+                    Request
+                </button>
+                <button class="tab-button" 
+                        data-tab="history" 
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="history-tab">
+                    History
+                </button>
+                <button class="tab-button" 
+                        data-tab="collections" 
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="collections-tab">
+                    Collections
+                </button>
+                <button class="tab-button" 
+                        data-tab="settings" 
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="settings-tab">
+                    Settings
+                </button>
             </div>
 
             <!-- Request Tab -->
-            <div id="request-tab" class="tab-content active">
+            <div id="request-tab" class="tab-content active" role="tabpanel" aria-labelledby="request-tab-button">
                 <div class="request-section">
+                    <!-- Method -->
                     <label for="method">Method:</label>
-                    <select id="method">
+                    <select id="method" aria-label="HTTP method">
                         <option value="GET">GET</option>
                         <option value="POST">POST</option>
                         <option value="PUT">PUT</option>
@@ -69,123 +105,277 @@
                         <option value="OPTIONS">OPTIONS</option>
                     </select>
 
+                    <!-- URL -->
                     <label for="url">URL:</label>
                     <div class="input-with-preview">
-                        <div contenteditable="true" id="url" class="editable-input">https://jsonplaceholder.typicode.com/posts/1</div>
-                        <div class="preview-hint" id="url-preview"></div>
+                        <input type="text" 
+                               id="url" 
+                               class="url-input" 
+                               placeholder="https://api.example.com/endpoint"
+                               aria-label="Request URL"
+                               spellcheck="false"
+                               autocomplete="off">
+                        <div class="preview-hint" id="url-preview" aria-live="polite"></div>
                     </div>
 
                     <!-- Query Parameters -->
                     <div class="query-params">
                         <label>Query Parameters:</label>
-                        <div id="query-params-list"></div>
-                        <button id="add-query-param">+ Add Parameter</button>
+                        <div id="query-params-list" role="list" aria-label="Query parameters"></div>
+                        <button id="add-query-param" 
+                                class="add-param-btn"
+                                aria-label="Add query parameter">
+                            + Add Parameter
+                        </button>
                     </div>
 
+                    <!-- Headers -->
                     <label for="headers">Headers (one per line, format: Key: Value):</label>
                     <div class="input-with-preview">
-                        <div contenteditable="true" id="headers" class="editable-textarea">Content-Type: application/json
-Authorization: Bearer token</div>
-                        <div class="preview-hint" id="headers-preview"></div>
+                        <textarea id="headers" 
+                                  class="headers-textarea" 
+                                  rows="4" 
+                                  placeholder="Content-Type: application/json&#10;Authorization: Bearer {{API_TOKEN}}"
+                                  aria-label="Request headers"
+                                  spellcheck="false"></textarea>
+                        <div class="preview-hint" id="headers-preview" aria-live="polite"></div>
                     </div>
 
-                    <label for="body">Body (JSON):</label>
+                    <!-- Body -->
+                    <label for="body">Body (JSON or plain text):</label>
                     <div class="input-with-preview">
-                        <div contenteditable="true" id="body" class="editable-textarea">{"key": "value"}</div>
-                        <div class="preview-hint" id="body-preview"></div>
+                        <textarea id="body" 
+                                  class="body-textarea" 
+                                  rows="8" 
+                                  placeholder='{"key": "value"}'
+                                  aria-label="Request body"
+                                  spellcheck="false"></textarea>
+                        <div class="preview-hint" id="body-preview" aria-live="polite"></div>
                     </div>
 
+                    <!-- Actions -->
                     <div class="actions">
-                        <button id="send">Send Request</button>
-                        <button id="validate-request" title="Validate Variables">✓ Validate</button>
-                        <button id="save-request">💾 Save</button>
-                        <button id="export-curl">📤 Export cURL</button>
-                        <button id="import-curl">📋 Import cURL</button>
+                        <button id="send" 
+                                class="btn-primary"
+                                aria-label="Send HTTP request"
+                                title="Send request (Ctrl+Enter)">
+                            Send Request
+                        </button>
+                        <button id="validate-request" 
+                                class="btn-secondary"
+                                title="Validate environment variables"
+                                aria-label="Validate variables">
+                            ✓ Validate
+                        </button>
+                        <button id="save-request" 
+                                class="btn-secondary"
+                                title="Save request to collection (Ctrl+S)"
+                                aria-label="Save request">
+                            💾 Save
+                        </button>
+                        <button id="export-curl" 
+                                class="btn-secondary"
+                                title="Export as cURL command"
+                                aria-label="Export as cURL">
+                            📤 Export cURL
+                        </button>
+                        <button id="import-curl" 
+                                class="btn-secondary"
+                                title="Import from cURL command"
+                                aria-label="Import from cURL">
+                            📋 Import cURL
+                        </button>
                     </div>
                 </div>
             </div>
 
             <!-- History Tab -->
-            <div id="history-tab" class="tab-content">
+            <div id="history-tab" class="tab-content" role="tabpanel" aria-labelledby="history-tab-button">
                 <div class="history-section">
-                    <h3>Request History</h3>
-                    <div id="history-list"></div>
-                    <button id="clear-history">Clear History</button>
+                    <div class="section-header">
+                        <h3>Request History</h3>
+                        <button id="clear-history" 
+                                class="btn-danger-outline"
+                                aria-label="Clear all history">
+                            Clear History
+                        </button>
+                    </div>
+                    <div id="history-list" role="list" aria-label="Request history"></div>
                 </div>
             </div>
 
             <!-- Collections Tab -->
-            <div id="collections-tab" class="tab-content">
+            <div id="collections-tab" class="tab-content" role="tabpanel" aria-labelledby="collections-tab-button">
                 <div class="collections-section">
-                    <h3>Collections</h3>
-                    <div id="collections-list"></div>
-                    <button id="create-collection">+ New Collection</button>
+                    <div class="section-header">
+                        <h3>Collections</h3>
+                        <button id="create-collection" 
+                                class="btn-primary-outline"
+                                aria-label="Create new collection">
+                            + New Collection
+                        </button>
+                    </div>
+                    <div id="collections-list" role="tree" aria-label="Request collections"></div>
                 </div>
             </div>
 
             <!-- Settings Tab -->
-            <div id="settings-tab" class="tab-content">
+            <div id="settings-tab" class="tab-content" role="tabpanel" aria-labelledby="settings-tab-button">
                 <div class="settings-section">
                     <h3>Settings</h3>
-                    <label for="timeout">Timeout (ms):</label>
-                    <input type="number" id="timeout" value="10000">
+                    
+                    <div class="setting-item">
+                        <label for="timeout">Request Timeout (ms):</label>
+                        <input type="number" 
+                               id="timeout" 
+                               min="1000" 
+                               max="300000" 
+                               step="1000"
+                               placeholder="10000"
+                               aria-label="Request timeout in milliseconds"
+                               aria-describedby="timeout-hint"
+                               autocomplete="off">
+                        <span id="timeout-hint" class="setting-hint">Default: 10000ms (10 seconds). Max: 300000ms (5 minutes)</span>
+                    </div>
+
+                    <!-- Future Features (disabled for now) -->
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="auto-format-json" checked disabled>
+                            Auto-format JSON responses
+                            <span class="coming-soon">(Coming soon)</span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="save-history" checked disabled>
+                            Save request history
+                            <span class="coming-soon">(Coming soon)</span>
+                        </label>
+                        <span class="setting-hint">Keep last 50 requests</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="show-preview" checked disabled>
+                            Show variable preview hints
+                            <span class="coming-soon">(Coming soon)</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
             <!-- Response Section -->
             <div id="response-section">
                 <h3>Response</h3>
-                <div id="response-info"></div>
-                <div class="response-tabs">
-                    <button class="response-tab-button active" data-response-tab="body">Body</button>
-                    <button class="response-tab-button" data-response-tab="headers">Headers</button>
+                <div id="response-info" class="response-placeholder">
+                    <span class="empty-response-text">No response yet. Send a request to see results here.</span>
                 </div>
-                <div id="response-body-tab" class="response-content active">
-                    <pre id="response-body"></pre>
+                <div class="response-tabs" role="tablist">
+                    <button class="response-tab-button active" 
+                            data-response-tab="body"
+                            role="tab"
+                            aria-selected="true"
+                            aria-controls="response-body-tab">
+                        Body
+                    </button>
+                    <button class="response-tab-button" 
+                            data-response-tab="headers"
+                            role="tab"
+                            aria-selected="false"
+                            aria-controls="response-headers-tab">
+                        Headers
+                    </button>
                 </div>
-                <div id="response-headers-tab" class="response-content">
-                    <pre id="response-headers"></pre>
+                <div id="response-body-tab" class="response-content active" role="tabpanel" aria-labelledby="response-body-button">
+                    <pre id="response-body" aria-label="Response body"></pre>
+                </div>
+                <div id="response-headers-tab" class="response-content" role="tabpanel" aria-labelledby="response-headers-button">
+                    <pre id="response-headers" aria-label="Response headers"></pre>
                 </div>
             </div>
         </div>
-
-
     </div>
 
     <!-- Modals -->
-    <div id="save-modal" class="modal">
+    
+    <!-- Save Request Modal -->
+    <div id="save-modal" class="modal" role="dialog" aria-labelledby="save-modal-title" aria-modal="true">
         <div class="modal-content">
-            <h3>Save Request</h3>
-            <input type="text" id="save-name" placeholder="Request name">
-            <select id="save-collection">
-                <option value="">Select Collection</option>
-            </select>
-            <button id="confirm-save">Save</button>
-            <button class="cancel">Cancel</button>
-        </div>
-    </div>
-
-    <div id="collection-modal" class="modal">
-        <div class="modal-content">
-            <h3>Create Collection</h3>
-            <input type="text" id="collection-name" placeholder="Collection name">
-            <button id="confirm-create-collection">Create</button>
-            <button class="cancel">Cancel</button>
-        </div>
-    </div>
-
-    <div id="curl-import-modal" class="modal">
-        <div class="modal-content">
-            <h3>Import cURL</h3>
-            <p style="margin-bottom: 10px; color: #aaa; font-size: 12px;">Paste your cURL command below:</p>
-            <textarea id="curl-import-input" rows="5" style="width: 100%; margin-bottom: 15px;" placeholder="curl -X POST https://api.example.com..."></textarea>
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button id="confirm-import-curl">Import</button>
-                <button class="cancel" style="background: transparent; border: 1px solid #555;">Cancel</button>
+            <div class="modal-header">
+                <h3 id="save-modal-title">Save Request</h3>
+                <button class="modal-close cancel" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="save-name">Request Name:</label>
+                <input type="text" 
+                       id="save-name" 
+                       placeholder="My API Request"
+                       aria-label="Request name"
+                       spellcheck="false"
+                       autocomplete="off">
+                
+                <label for="save-collection">Collection:</label>
+                <select id="save-collection" aria-label="Select collection">
+                    <option value="">Select Collection</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-save" class="btn-primary">Save</button>
+                <button class="cancel btn-secondary">Cancel</button>
             </div>
         </div>
     </div>
 
+    <!-- Create Collection Modal -->
+    <div id="collection-modal" class="modal" role="dialog" aria-labelledby="collection-modal-title" aria-modal="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="collection-modal-title">Create Collection</h3>
+                <button class="modal-close cancel" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="collection-name">Collection Name:</label>
+                <input type="text" 
+                       id="collection-name" 
+                       placeholder="My Collection"
+                       aria-label="Collection name"
+                       spellcheck="false"
+                       autocomplete="off">
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-create-collection" class="btn-primary">Create</button>
+                <button class="cancel btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import cURL Modal -->
+    <div id="curl-import-modal" class="modal" role="dialog" aria-labelledby="curl-modal-title" aria-modal="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="curl-modal-title">Import cURL</h3>
+                <button class="modal-close cancel" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">
+                    Paste your cURL command below:
+                </p>
+                <textarea id="curl-import-input" 
+                          rows="6" 
+                          placeholder="curl -X POST https://api.example.com/endpoint -H 'Content-Type: application/json' -d '{...}'"
+                          aria-label="cURL command"
+                          spellcheck="false"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-import-curl" class="btn-primary">Import</button>
+                <button class="cancel btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./logger.js"></script>
     <script src="./script.js"></script>
 </body>
 </html>
