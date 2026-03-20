@@ -6,7 +6,7 @@
 
 *Modern API Testing Made Simple*
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://marketplace.visualstudio.com/items?itemName=FreeRave.dotfetch)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://marketplace.visualstudio.com/items?itemName=FreeRave.dotfetch)
 [![VS Code](https://img.shields.io/badge/VS_Code-1.74+-blue.svg)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -65,15 +65,16 @@ DotFetch is a **powerful, modern HTTP client** built specifically for VS Code. D
 
 **Complete HTTP Support**
 - ✅ All HTTP Methods (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)
-- ✅ Custom Headers with validation
+- ✅ Comprehensive Auth (Bearer, Basic, API Key, OAuth 2.0)
 - ✅ Request Body (JSON, Text, Form Data)
+- ✅ Custom Headers with validation
 - ✅ Query Parameters management
-- ✅ Timeout configuration
-- ✅ Response status codes & headers
+- ✅ Configurable Timeout & Network Retry
 
 **Advanced Request Features**
-- ✅ Request History with timestamps
-- ✅ Auto-save recent requests
+- ✅ Pre-Request & Post-Response Scripts
+- ✅ Request Templates for reusability
+- ✅ Request History with search & filters
 - ✅ Request validation before sending
 - ✅ Syntax highlighting for JSON bodies
 
@@ -83,9 +84,9 @@ DotFetch is a **powerful, modern HTTP client** built specifically for VS Code. D
 **Response Analysis**
 - ✅ Formatted JSON responses
 - ✅ Response headers inspection
-- ✅ Status code indicators
+- ✅ Visual Payload Size Warnings
 - ✅ Response time measurement
-- ✅ Raw response viewer
+- ✅ Advanced Error Explanations
 
 </td>
 </tr>
@@ -125,10 +126,10 @@ DotFetch is a **powerful, modern HTTP client** built specifically for VS Code. D
 ### 📁 Collections & Organization
 
 - ✅ **Request Collections** - Group requests by project/feature
-- ✅ **Auto-Default Collection** - Automatic setup for new users
+- ✅ **One-Click Export** - Portable JSON backups
+- ✅ **Request Annotations** - Save notes for documentation
 - ✅ **Save & Load** - One-click request management
 - ✅ **Collection CRUD** - Full create, read, update, delete operations
-- ✅ **Quick Access** - Expandable collection tree
 
 ### 🔄 Import/Export
 
@@ -157,13 +158,12 @@ DotFetch is a **powerful, modern HTTP client** built specifically for VS Code. D
 
 ### 🎨 Professional UI/UX
 
-- ✅ **Native Dark Theme** - Perfect VS Code integration
+- ✅ **Native Dark Theme** - Automatically syncs with VS Code's active theme
+- ✅ **Customizable Shortcuts** - Record your own keybinds for common actions
 - ✅ **Method Color Coding** - Visual HTTP method distinction
 - ✅ **Responsive Design** - Works on all screen sizes
 - ✅ **Loading States** - Visual feedback for all operations
-- ✅ **Keyboard Navigation** - Full accessibility support
-- ✅ **Context Menus** - Right-click functionality
-- ✅ **Smooth Animations** - Professional transitions
+- ✅ **Context Menus & Modals** - Professional fluid interactions
 
 ---
 

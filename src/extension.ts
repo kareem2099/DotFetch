@@ -179,283 +179,194 @@ class DotFetchProvider implements vscode.WebviewViewProvider {
 	}
 
 	private async handleRequest(webviewView: vscode.WebviewView, message: any) {
-		const startTime = Date.now();
+    const startTime = Date.now();
+    const maxRetries = Math.min(Math.max(parseInt(message.retryCount) || 0, 0), 5);
+    const retryableCodes = ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNABORTED'];
 
-		// Cancel any pending request
-		this.cancelRequest();
+    this.cancelRequest();
 
-		// Create new abort controller
-		this.abortController = new AbortController();
+    try {
+        const selectedEnvironment = message.environment || 'none';
 
-		try {
-			const selectedEnvironment = message.environment || 'none';
-
-			// Validate URL exists
-			if (!message.url || message.url.trim() === '') {
-				webviewView.webview.postMessage({
-					type: 'error',
-					error: 'URL is required',
-					duration: 0
-				});
-				return;
-			}
-
-			// Substitute variables in URL
-			let substitutedUrl = this.environmentManager.substituteVariables(
-				message.url.trim(),
-				selectedEnvironment
-			);
-
-			// Validate URL after substitution
-			if (!substitutedUrl || substitutedUrl.trim() === '') {
-				webviewView.webview.postMessage({
-					type: 'error',
-					error: 'URL is empty after variable substitution',
-					duration: 0
-				});
-				return;
-			}
-
-			// FIXED: Stricter URL validation
-			try {
-				const urlObj = new URL(substitutedUrl);
-				if (!['http:', 'https:'].includes(urlObj.protocol)) {
-					throw new Error('Protocol must be http or https');
-				}
-			} catch (urlError) {
-				webviewView.webview.postMessage({
-					type: 'error',
-					error: 'Invalid URL format. URL must start with http:// or https:// and be properly formatted.',
-					duration: 0
-				});
-				return;
-			}
-
-			// Substitute variables in headers
-			let substitutedHeaders: { [key: string]: string } = {};
-			if (message.headers) {
-				const headerLines = message.headers.split('\n');
-				for (const line of headerLines) {
-					const trimmedLine = line.trim();
-					if (!trimmedLine || trimmedLine.startsWith('#')) {
-						continue; // Skip empty lines and comments
-					}
-
-					const colonIndex = trimmedLine.indexOf(':');
-					if (colonIndex > 0) {
-						const key = trimmedLine.substring(0, colonIndex).trim();
-
-						// FIXED: Validate header key
-						if (!/^[a-zA-Z0-9\-_]+$/.test(key)) {
-							logger.warn(`Invalid header key: ${key}`);
-							continue;
-						}
-
-						const value = trimmedLine.substring(colonIndex + 1).trim();
-
-						const substitutedValue = this.environmentManager.substituteVariables(
-							value,
-							selectedEnvironment
-						);
-
-						// Use substituted value, or fallback to original if substitution failed
-						substitutedHeaders[key] = substitutedValue || value;
-					}
-				}
-			}
-
-			// Substitute variables in body
-			let substitutedBody = message.body || '';
-			if (substitutedBody) {
-				substitutedBody = this.environmentManager.substituteVariables(
-					substitutedBody,
-					selectedEnvironment
-				);
-			}
-
-			// Validate all variables are present (only if environment is selected)
-			if (selectedEnvironment !== 'none') {
-				const fieldsToCheck = [
-					substitutedUrl,
-					JSON.stringify(substitutedHeaders),
-					substitutedBody
-				];
-
-				let allFieldsValid = true;
-				const missingVariables: string[] = [];
-
-				for (const field of fieldsToCheck) {
-					if (field) {
-						const validation = this.environmentManager.validateVariables(
-							field,
-							selectedEnvironment
-						);
-						if (!validation.valid) {
-							allFieldsValid = false;
-							missingVariables.push(...validation.missing);
-						}
-					}
-				}
-
-				if (!allFieldsValid) {
-					const uniqueMissing = [...new Set(missingVariables)];
-					throw new Error(`Missing environment variables: ${uniqueMissing.join(', ')}`);
-				}
-			}
-
-			// Parse body if it exists
-			let data: any = undefined;
-			if (substitutedBody) {
-				try {
-					data = JSON.parse(substitutedBody);
-				} catch (e) {
-					// If not valid JSON, send as string
-					data = substitutedBody;
-				}
-			}
-
-			// Validate and sanitize timeout
-			const timeout = (message.timeout && message.timeout > 0 && message.timeout <= DotFetchProvider.MAX_TIMEOUT)
-				? message.timeout
-				: DotFetchProvider.DEFAULT_TIMEOUT;
-
-			// Log request
-			logger.log('Sending request:', {
-				method: message.method,
-				url: substitutedUrl,
-				environment: selectedEnvironment,
-				timeout: `${timeout}ms`
-			});
-
-			// Make the request
-			const response: AxiosResponse = await axios({
-				method: message.method,
-				url: substitutedUrl,
-				headers: substitutedHeaders,
-				data: data,
-				timeout: timeout,
-				validateStatus: () => true, // Accept any status code
-				maxContentLength: DotFetchProvider.MAX_RESPONSE_SIZE,
-				maxBodyLength: DotFetchProvider.MAX_RESPONSE_SIZE,
-				signal: this.abortController.signal
-			});
-
-			const duration = Date.now() - startTime;
-
-			// Check response size
-			const responseSize = JSON.stringify(response.data).length;
-			const isLarge = responseSize > DotFetchProvider.DISPLAY_THRESHOLD;
-
-			// Log response
-			logger.log('Response received:', {
-				status: response.status,
-				duration: `${duration}ms`,
-				size: `${(responseSize / 1024).toFixed(2)} KB`
-			});
-
-			if (isLarge) {
-				// For large responses, send a truncated version
-				webviewView.webview.postMessage({
-					type: 'response',
-					status: response.status,
-					statusText: response.statusText,
-					headers: response.headers,
-					data: `[Response too large to display: ${(responseSize / 1024).toFixed(2)} KB]\n\nFirst 1000 characters:\n${JSON.stringify(response.data).substring(0, 1000)}...`,
-					duration: duration,
-					isLarge: true,
-					size: responseSize
-				});
-			} else {
-				webviewView.webview.postMessage({
-					type: 'response',
-					status: response.status,
-					statusText: response.statusText,
-					headers: response.headers,
-					data: response.data,
-					duration: duration,
-					isLarge: false,
-					size: responseSize
-				});
-			}
-
-		} catch (error: unknown) {
-			const duration = Date.now() - startTime;
-
-			// Check if request was cancelled
-			if (error instanceof Error && error.name === 'CanceledError') {
-			logger.log('Request cancelled by user');
-				webviewView.webview.postMessage({
-					type: 'error',
-					error: 'Request cancelled',
-					duration: duration,
-					cancelled: true
-				});
-				return;
-			}
-
-			// Log error
-			logger.error('Request error:', error);
-
-			// Handle different types of errors
-			let errorMessage: string;
-			let fullError: any = undefined;
-
-			if (axios.isAxiosError(error)) {
-				const axiosError = error as AxiosError;
-
-				if (axiosError.response) {
-					// Server responded with error status
-					errorMessage = `HTTP ${axiosError.response.status}: ${axiosError.response.statusText}`;
-
-					if (axiosError.response.data) {
-						const dataStr = typeof axiosError.response.data === 'string'
-							? axiosError.response.data
-							: JSON.stringify(axiosError.response.data);
-
-						// Only include response data if it's small
-						if (dataStr.length < 500) {
-							errorMessage += `\n\n${dataStr}`;
-						} else {
-							errorMessage += `\n\n${dataStr.substring(0, 500)}...`;
-						}
-
-						fullError = axiosError.response.data;
-					}
-				} else if (axiosError.request) {
-					// Request was made but no response received
-					if (axiosError.code === 'ECONNABORTED') {
-						errorMessage = 'Request timeout. The server took too long to respond.';
-					} else if (axiosError.code === 'ENOTFOUND') {
-						errorMessage = 'DNS lookup failed. Could not find host.';
-					} else if (axiosError.code === 'ECONNREFUSED') {
-						errorMessage = 'Connection refused. Server is not accepting connections.';
-					} else if (axiosError.code === 'ENOTFOUND') {
-						errorMessage = 'Network error. Please check your internet connection.';
-					} else {
-						errorMessage = `Network error: ${axiosError.code || 'Unknown'}. Check your connection and try again.`;
-					}
-				} else {
-					// Something else went wrong
-					errorMessage = axiosError.message;
-				}
-			} else if (error instanceof Error) {
-				// Standard Error object
-				errorMessage = error.message || 'Unknown error occurred';
-			} else {
-				// Non-Error object
-				errorMessage = 'An unexpected error occurred';
-			}
-
-			webviewView.webview.postMessage({
+        // Validate URL exists
+		if (!message.url || message.url.trim() === '') {
+            webviewView.webview.postMessage({
 				type: 'error',
-				error: errorMessage,
-				duration: duration,
-				fullError: fullError
+				error: 'URL is required',
+				duration: 0
 			});
-		} finally {
-			this.abortController = undefined;
-		}
-	}
+            return;
+        }
+
+        // Substitute variables in URL
+		let substitutedUrl = this.environmentManager.substituteVariables(
+			message.url.trim(),
+			selectedEnvironment
+		);
+
+        try {
+            const urlObj = new URL(substitutedUrl);
+            if (!['http:', 'https:'].includes(urlObj.protocol)) {
+                throw new Error('Protocol must be http or https');
+            }
+        } catch {
+            webviewView.webview.postMessage({ type: 'error', error: 'Invalid URL format.', duration: 0 });
+            return;
+        }
+
+        let substitutedHeaders: { [key: string]: string } = {};
+        if (message.headers) {
+            for (const line of message.headers.split('\n')) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) { continue; }
+                const colonIndex = trimmed.indexOf(':');
+                if (colonIndex > 0) {
+                    const key = trimmed.substring(0, colonIndex).trim();
+                    if (!/^[a-zA-Z0-9\-_]+$/.test(key)) { continue; }
+                    const value = trimmed.substring(colonIndex + 1).trim();
+                    substitutedHeaders[key] = this.environmentManager.substituteVariables(value, selectedEnvironment) || value;
+                }
+            }
+        }
+
+        let substitutedBody = message.body || '';
+        if (substitutedBody) {
+            substitutedBody = this.environmentManager.substituteVariables(substitutedBody, selectedEnvironment);
+        }
+
+        let data: any = undefined;
+        if (substitutedBody) {
+            try { data = JSON.parse(substitutedBody); } catch { data = substitutedBody; }
+        }
+
+        const timeout = (message.timeout && message.timeout > 0 && message.timeout <= DotFetchProvider.MAX_TIMEOUT)
+            ? message.timeout : DotFetchProvider.DEFAULT_TIMEOUT;
+
+        // ── RETRY LOOP ──
+        let lastError: any = null;
+
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            if (attempt > 0) {
+                logger.log(`Retry attempt ${attempt}/${maxRetries}`);
+                webviewView.webview.postMessage({
+                    type: 'retryAttempt',
+                    attempt,
+                    total: maxRetries
+                });
+                await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+            }
+
+            this.abortController = new AbortController();
+
+            try {
+                const response: AxiosResponse = await axios({
+                    method: message.method,
+                    url: substitutedUrl,
+                    headers: substitutedHeaders,
+                    data,
+                    timeout,
+                    validateStatus: () => true,
+                    maxContentLength: DotFetchProvider.MAX_RESPONSE_SIZE,
+                    maxBodyLength: DotFetchProvider.MAX_RESPONSE_SIZE,
+                    signal: this.abortController.signal
+                });
+
+                const duration = Date.now() - startTime;
+                const responseSize = JSON.stringify(response.data).length;
+                const isLarge = responseSize > DotFetchProvider.DISPLAY_THRESHOLD;
+
+                logger.log('Response received:', { status: response.status, duration: `${duration}ms`, attempts: attempt + 1 });
+
+                webviewView.webview.postMessage({
+                    type: 'response',
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: response.headers,
+                    data: isLarge
+                        ? `[Response too large: ${(responseSize / 1024).toFixed(2)} KB]\n\nFirst 1000 characters:\n${JSON.stringify(response.data).substring(0, 1000)}...`
+                        : response.data,
+                    duration,
+                    isLarge,
+                    size: responseSize,
+                    attempts: attempt + 1
+                });
+                return;
+
+            } catch (error: unknown) {
+                lastError = error;
+
+                if (error instanceof Error && error.name === 'CanceledError') {
+                    webviewView.webview.postMessage({ type: 'error', error: 'Request cancelled', duration: Date.now() - startTime, cancelled: true });
+                    return;
+                }
+
+                const isRetryable = axios.isAxiosError(error) &&
+                    error.request &&
+                    !error.response &&
+                    retryableCodes.includes((error as any).code || '');
+
+                if (!isRetryable || attempt >= maxRetries) { break; }
+
+                logger.log(`Attempt ${attempt + 1} failed with ${(error as any).code}, retrying...`);
+            }
+        }
+
+        // All attempts failed
+        const duration = Date.now() - startTime;
+        let errorMessage = 'An unexpected error occurred';
+        let errorHint = '';
+        let rawDetails = '';
+
+        if (axios.isAxiosError(lastError)) {
+            rawDetails = lastError.message;
+            if (lastError.stack) { rawDetails += '\n' + lastError.stack; }
+
+            if (lastError.response) {
+                errorMessage = `HTTP ${lastError.response.status}: ${lastError.response.statusText}`;
+                if (lastError.response.status === 401 || lastError.response.status === 403) {
+                    errorHint = 'Authentication failed - Verify credentials or token permissions.';
+                } else if (lastError.response.status >= 500) {
+                    errorHint = 'Server error - The remote server encountered an internal issue.';
+                } else if (lastError.response.status === 404) {
+                    errorHint = 'Not Found - Check the URL path and parameters.';
+                }
+            } else if (lastError.code === 'ECONNABORTED') {
+                errorMessage = 'Request timeout. The server took too long to respond.';
+                errorHint = 'Request timeout - Check timeout settings or server health.';
+            } else if (lastError.code === 'ENOTFOUND') {
+                errorMessage = 'DNS lookup failed. Could not find host.';
+                errorHint = 'DNS resolution failed - Check domain spelling or your network connection.';
+            } else if (lastError.code === 'ECONNREFUSED') {
+                errorMessage = 'Connection refused. Server is not accepting connections.';
+                errorHint = 'Connection refused - Check if the host and port are correct and the service is running.';
+            } else {
+                errorMessage = `Network error: ${lastError.code || 'Unknown'}`;
+            }
+            if (maxRetries > 0) {
+                errorMessage += ` (failed after ${maxRetries + 1} attempts)`;
+            }
+        } else if (lastError instanceof Error) {
+            errorMessage = lastError.message;
+            rawDetails = lastError.stack || lastError.message;
+        } else {
+            rawDetails = String(lastError);
+        }
+
+        webviewView.webview.postMessage({ type: 'error', error: errorMessage, hint: errorHint, rawDetails, duration });
+
+    } catch (error: unknown) {
+        const duration = Date.now() - startTime;
+        webviewView.webview.postMessage({
+            type: 'error',
+            error: error instanceof Error ? error.message : 'An unexpected error occurred',
+            hint: 'A critical extension error occurred before the request could be sent.',
+            rawDetails: error instanceof Error ? error.stack || error.message : String(error),
+            duration
+        });
+    } finally {
+        this.abortController = undefined;
+    }
+}
 
 	private handlePreview(webviewView: vscode.WebviewView, message: any): void {
 		const { environment, inputs } = message;

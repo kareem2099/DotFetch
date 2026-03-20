@@ -4,6 +4,33 @@ All notable changes to the "dotfetch" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.2.0] - 2026-03-19
+
+### ✨ Added (New Features & Refinements)
+
+#### Authentication & Authorization
+- **Comprehensive Auth Support**: Added specialized UI for Bearer Token, Basic Auth, OAuth 2.0, and API Key authentication methods.
+- **OAuth 2.0 Integration**: Added support for major providers (GitHub, Google, Twitter/X, Facebook, Reddit) with popup-based flow and secure token extraction.
+
+#### Advanced Request Management
+- **Pre-Request & Post-Response Scripts**: Support for executing sandboxed JavaScript code before a request is sent and after a response is received.
+- **Request Templates**: Save frequently used requests as reusable templates that can be loaded with one click.
+- **Retry Mechanism**: Added automatic retry for failed networking requests with exponential backoff configurations.
+- **Request Annotations**: Add custom notes and comments to saved requests for better documentation.
+
+#### Enhanced Data Flow & UI
+- **History Search & Filtering**: Quickly find past requests using URL parameters, methods, and status codes.
+- **Collection Export**: Export your entire request collections to portable JSON files for backup and sharing.
+- **Response Size Warnings**: Added visual indicators for large payloads (>1MB warning, >5MB limit).
+- **Customizable Keyboard Shortcuts**: Map your own keys to common actions (Send, Save, Clear, Close) inside the Settings tab.
+- **Native VS Code Theming**: Rebuilt CSS architecture to natively inherit VS Code's active color theme (supports all Dark, Light, and High Contrast themes automatically).
+- **Enhanced Error Messages**: Human-readable explanations for common networking errors (ENOTFOUND, ECONNREFUSED, ETIMEDOUT) with copy-to-clipboard functionality.
+
+### 🐛 Fixed / Refactored
+- Resolved OAuth flow callbacks for Facebook, Reddit, and Twitter.
+- Addressed hashtag logic parsing in various flows.
+- Overhauled Webview architecture by breaking monolithic scripts into modular components (`api.js`, `collections.js`, `history.js`, `request.js`, `shortcuts.js`, `ui.js`).
+
 ## [1.1.0] - 2026-02-14
 
 ### ✨ Added (Critical Bug Fixes & Security)

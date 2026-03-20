@@ -7,6 +7,7 @@ import * as os from 'os';
 // as well as import your extension to test it
 import * as vscode from 'vscode';
 import { EnvironmentManager, EnvironmentVariables } from '../environmentManager';
+import { logger } from '../logger';
 
 suite('Extension Test Suite', () => {
 	let testWorkspacePath: string;
@@ -100,7 +101,7 @@ VALID_VAR=valid_value
 				fs.rmSync(testWorkspacePath, { recursive: true, force: true });
 			}
 		} catch (error) {
-			console.warn('Failed to clean up test directory:', error);
+			logger.warn('Failed to clean up test directory:', error);
 		}
 	});
 

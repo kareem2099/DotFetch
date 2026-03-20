@@ -2,16 +2,20 @@
    Global Variables & Reset
    ============================================================================ */
 :root {
-    --vscode-bg: #1e1e1e;
-    --vscode-fg: #cccccc;
-    --border-color: #3e3e42;
-    --input-bg: #3c3c3c;
-    --input-border: #555555;
-    --accent-color: #007acc;
-    --accent-hover: #005aa3;
-    --success-color: #28a745;
-    --error-color: #dc3545;
-    --warning-bg: #fff3cd;
+    --vscode-bg: var(--vscode-editor-background, #1e1e1e);
+    --vscode-fg: var(--vscode-input-foreground, var(--vscode-editor-foreground, #cccccc));
+    --border-color: var(--vscode-panel-border, #3e3e42);
+    --input-bg: var(--vscode-input-background, #3c3c3c);
+    --input-border: var(--vscode-input-border, #555555);
+    --accent-color: var(--vscode-button-background, #007acc);
+    --accent-hover: var(--vscode-button-hoverBackground, #005aa3);
+    --success-color: var(--vscode-testing-iconPassed, #28a745);
+    --error-color: var(--vscode-errorForeground, #dc3545);
+    --panel-bg: var(--vscode-sideBar-background, #252526);
+    --widget-bg: var(--vscode-editorWidget-background, #2d2d30);
+    --text-highlight: var(--vscode-foreground, #ffffff);
+    --text-muted: var(--vscode-descriptionForeground, #888888);
+    --warning-bg: var(--text-highlight)3cd;
     --warning-text: #856404;
 }
 
@@ -39,7 +43,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: #1e1e1e;
+    background: var(--vscode-bg);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -64,14 +68,14 @@ button {
     justify-content: space-between;
     align-items: center;
     padding: 10px 20px;
-    background: #252526;
+    background: var(--panel-bg);
     border-bottom: 1px solid var(--border-color);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .app-header h1 {
     margin: 0;
-    color: #ffffff;
+    color: var(--text-highlight);
     font-size: 18px;
     font-weight: 600;
 }
@@ -131,7 +135,7 @@ button {
     gap: 10px;
     margin-bottom: 20px;
     padding: 12px;
-    background: #2d2d30;
+    background: var(--widget-bg);
     border-radius: 4px;
     border: 1px solid var(--border-color);
 }
@@ -140,7 +144,7 @@ button {
     margin: 0;
     font-weight: 600;
     white-space: nowrap;
-    color: #fff;
+    color: var(--text-highlight);
 }
 
 .environment-selector select {
@@ -177,7 +181,7 @@ button {
 
 .env-status {
     font-size: 11px;
-    color: #888;
+    color: var(--text-muted);
     min-width: 80px;
     text-align: right;
 }
@@ -194,7 +198,7 @@ button {
 .tab-button {
     background: transparent;
     border: none;
-    color: #999;
+    color: var(--vscode-tab-inactiveForeground, #999);
     padding: 8px 16px;
     cursor: pointer;
     border-bottom: 2px solid transparent;
@@ -202,12 +206,12 @@ button {
 }
 
 .tab-button:hover {
-    color: #fff;
+    color: var(--text-highlight);
     background: rgba(255, 255, 255, 0.05);
 }
 
 .tab-button.active {
-    color: #fff;
+    color: var(--text-highlight);
     border-bottom: 2px solid var(--accent-color);
 }
 
@@ -238,7 +242,7 @@ button {
     display: block;
     margin: 15px 0 5px;
     font-weight: 600;
-    color: #ddd;
+    color: var(--vscode-tab-activeForeground, #ddd);
     font-size: 12px;
 }
 
@@ -315,9 +319,9 @@ textarea {
     margin-top: 4px;
     font-size: 11px;
     padding: 4px 8px;
-    background: #252526;
+    background: var(--panel-bg);
     border-left: 3px solid var(--accent-color);
-    color: #aaa;
+    color: var(--vscode-descriptionForeground, #aaa);
     display: none;
     font-family: 'Consolas', monospace;
 }
@@ -352,7 +356,7 @@ textarea {
 .query-params {
     margin: 10px 0;
     padding: 10px;
-    background: #252526;
+    background: var(--panel-bg);
     border-radius: 4px;
 }
 
@@ -363,7 +367,7 @@ textarea {
 }
 
 .remove-btn {
-    color: #888;
+    color: var(--text-muted);
     font-size: 14px;
 }
 
@@ -428,8 +432,8 @@ button {
 
 #save-request,
 #validate-request {
-    background: #3e3e42;
-    color: #fff;
+    background: var(--border-color);
+    color: var(--text-highlight);
 }
 
 #save-request:hover,
@@ -440,14 +444,14 @@ button {
 #export-curl,
 #import-curl {
     background: transparent;
-    border: 1px solid #555;
+    border: 1px solid var(--input-border);
     color: #ccc;
 }
 
 #export-curl:hover,
 #import-curl:hover {
-    border-color: #888;
-    color: #fff;
+    border-color: var(--text-muted);
+    color: var(--text-highlight);
 }
 
 /* ============================================================================
@@ -469,8 +473,8 @@ button {
 }
 
 .btn-secondary {
-    background: #3e3e42;
-    color: #fff;
+    background: var(--border-color);
+    color: var(--text-highlight);
     border: none;
     padding: 8px 16px;
     border-radius: 2px;
@@ -536,6 +540,26 @@ button {
     color: var(--error-color);
 }
 
+.size-warning {
+    background: rgba(220, 53, 69, 0.2);
+    color: #ff6b6b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-left: 8px;
+    font-weight: 600;
+}
+
+.size-info {
+    background: rgba(107, 185, 240, 0.2);
+    color: #6bb9f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-left: 8px;
+    font-weight: 600;
+}
+
 .response-tabs {
     margin: 10px 0;
 }
@@ -543,20 +567,20 @@ button {
 .response-tab-button {
     background: transparent;
     border: 1px solid var(--border-color);
-    color: #888;
+    color: var(--text-muted);
     padding: 4px 12px;
     margin-right: -1px;
 }
 
 .response-tab-button.active {
-    background: #3e3e42;
-    color: #fff;
-    border-color: #3e3e42;
+    background: var(--border-color);
+    color: var(--text-highlight);
+    border-color: var(--border-color);
 }
 
 #response-body,
 #response-headers {
-    background: #1e1e1e;
+    background: var(--vscode-bg);
     border: 1px solid var(--border-color);
     padding: 10px;
     border-radius: 2px;
@@ -577,7 +601,7 @@ button {
    History & Collections
    ============================================================================ */
 .history-item {
-    background: #252526;
+    background: var(--panel-bg);
     padding: 10px;
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
@@ -585,7 +609,7 @@ button {
 }
 
 .history-item:hover {
-    background: #2d2d30;
+    background: var(--widget-bg);
 }
 
 .history-item .method {
@@ -631,7 +655,7 @@ button {
 }
 
 .collection-item:hover {
-    background: #2d2d30;
+    background: var(--widget-bg);
 }
 
 /* ============================================================================
@@ -650,7 +674,7 @@ button {
 }
 
 .modal-content {
-    background-color: #252526;
+    background-color: var(--panel-bg);
     margin: 15% auto;
     padding: 20px;
     border: 1px solid var(--border-color);
@@ -661,7 +685,7 @@ button {
 
 .modal-content h3 {
     margin-top: 0;
-    color: #fff;
+    color: var(--text-highlight);
 }
 
 .modal-content button {
@@ -671,7 +695,7 @@ button {
 
 .modal-content .cancel {
     background: transparent;
-    border: 1px solid #555;
+    border: 1px solid var(--input-border);
 }
 
 .modal-header {
@@ -690,7 +714,7 @@ button {
 .modal-close {
     background: none;
     border: none;
-    color: #888;
+    color: var(--text-muted);
     font-size: 24px;
     cursor: pointer;
     padding: 0;
@@ -702,7 +726,7 @@ button {
 }
 
 .modal-close:hover {
-    color: #fff;
+    color: var(--text-highlight);
     background: rgba(255, 255, 255, 0.1);
     border-radius: 3px;
 }
@@ -715,7 +739,7 @@ button {
     display: block;
     margin: 10px 0 5px;
     font-weight: 600;
-    color: #ddd;
+    color: var(--vscode-tab-activeForeground, #ddd);
     font-size: 12px;
 }
 
@@ -751,7 +775,7 @@ button {
     display: block;
     margin-bottom: 5px;
     font-weight: 600;
-    color: #ddd;
+    color: var(--vscode-tab-activeForeground, #ddd);
 }
 
 .setting-item input[type="checkbox"] {
@@ -762,7 +786,7 @@ button {
     display: block;
     margin-top: 5px;
     font-size: 11px;
-    color: #888;
+    color: var(--text-muted);
 }
 
 /* ============================================================================
@@ -841,7 +865,7 @@ button {
 }
 
 .text-muted {
-    color: #888;
+    color: var(--text-muted);
 }
 
 .text-center {
@@ -864,7 +888,7 @@ button {
     background: none;
     border: none;
     cursor: pointer;
-    color: #888;
+    color: var(--text-muted);
 }
 
 /* ============================================================================
@@ -873,13 +897,13 @@ button {
 .status-badge {
     padding: 3px 8px;
     border-radius: 4px;
-    background: #333;
+    background: var(--vscode-badge-background, #333);
     color: white;
 }
 
 /* Hover Effect for Request List */
 .request-item-row:hover {
-    background: #2d2d30;
+    background: var(--widget-bg);
 }
 
 /* Collection Header */
@@ -967,7 +991,7 @@ button {
 
 /* Request item hover effect */
 .request-item-hover {
-    background: #2d2d30;
+    background: var(--widget-bg);
 }
 
 /* Collection item styling */
@@ -978,14 +1002,14 @@ button {
 /* Empty state messages */
 .empty-message {
     padding: 10px;
-    color: #888;
+    color: var(--text-muted);
     text-align: center;
 }
 
 /* History/Collection metadata styling */
 .metadata-text {
     font-size: 0.85em;
-    color: #888;
+    color: var(--text-muted);
 }
 
 .metadata-separator {
@@ -1005,7 +1029,7 @@ button {
     background: none;
     border: none;
     cursor: pointer;
-    color: #888;
+    color: var(--text-muted);
 }
 
 .delete-collection-btn {
@@ -1034,7 +1058,7 @@ button {
 .status-badge-response {
     padding: 3px 8px;
     border-radius: 4px;
-    background: #333;
+    background: var(--vscode-badge-background, #333);
     color: white;
 }
 
@@ -1047,7 +1071,7 @@ button {
     background: none;
     border: none;
     cursor: pointer;
-    color: #888;
+    color: var(--text-muted);
 }
 
 /* Coming soon label */
@@ -1059,7 +1083,7 @@ button {
 
 /* Empty response message */
 .empty-response-text {
-    color: #888;
+    color: var(--text-muted);
 }
 
 /* Modal/Panel hidden state */
@@ -1070,6 +1094,106 @@ button {
 /* Modal description text */
 .modal-description {
     margin-bottom: 10px;
-    color: #aaa;
+    color: var(--vscode-descriptionForeground, #aaa);
     font-size: 12px;
 }
+
+/* ============================================================================
+   Authentication Section (T201, T202)
+   ============================================================================ */
+.auth-section {
+    margin-top: 5px;
+    padding: 10px;
+    background: var(--panel-bg);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.auth-section select {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.auth-fields {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.auth-fields:not(.hidden-element) {
+    display: flex;
+}
+.auth-row {
+    display: flex;
+    gap: 8px;
+}
+
+.auth-row input {
+    flex: 1;
+}
+
+.auth-preview {
+    display: none;
+    font-size: 11px;
+    font-family: 'Consolas', monospace;
+    padding: 4px 8px;
+    background: var(--vscode-bg);
+    border-left: 3px solid var(--success-color);
+    color: var(--vscode-descriptionForeground, #aaa);
+    border-radius: 0 2px 2px 0;
+    word-break: break-all;
+}
+
+.auth-preview-visible {
+    display: block;
+}
+
+/* ============================================================================
+   JSON Syntax Highlighting (T203)
+   ============================================================================ */
+.json-key     { color: #9cdcfe; }   /* Light blue - keys */
+.json-string  { color: #ce9178; }   /* Orange - string values */
+.json-number  { color: #b5cea8; }   /* Light green - numbers */
+.json-boolean { color: #569cd6; }   /* Blue - true/false */
+.json-null    { color: #569cd6; }   /* Blue - null */
+
+/* ============================================================================
+   Request Templates (T204)
+   ============================================================================ */
+.template-selector {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: var(--panel-bg);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    display: none; /* hidden until templates exist */
+}
+
+.template-selector label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--vscode-tab-activeForeground, #ddd);
+    font-size: 12px;
+}
+
+.template-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.template-row select {
+    flex: 1;
+}
+
+.template-row button {
+    padding: 6px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.shortcut-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.shortcut-row label { margin: 0; flex: 1; font-weight: 500; color: var(--text-highlight); }
+.shortcut-row input { width: 150px; text-align: center; cursor: pointer; }
+.shortcut-row input:focus { border-color: var(--accent-color); box-shadow: 0 0 3px var(--accent-color); }

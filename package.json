@@ -2,7 +2,7 @@
   "name": "dotfetch",
   "displayName": "DotFetch",
   "description": "A professional HTTP client extension for VS Code with environment variables, collections, and cURL support",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "FreeRave",
   "repository": {
     "type": "git",
@@ -17,61 +17,61 @@
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
-    "contributes": {
-        "commands": [
-            {
-                "command": "dotfetch.copyVariable",
-                "title": "Copy Variable",
-                "icon": "$(copy)"
-            },
-            {
-                "command": "dotfetch.copyVariableName",
-                "title": "Copy Variable Name"
-            },
-            {
-                "command": "dotfetch.copyVariablePlaceholder",
-                "title": "Copy as {{VARIABLE}}"
-            },
-            {
-                "command": "dotfetch.searchVariable",
-                "title": "Search Variable"
-            },
-            {
-                "command": "dotfetch.showAllVariables",
-                "title": "Show All Variables"
-            },
-            {
-                "command": "dotfetch.refreshEnvironments",
-                "title": "Refresh Environments",
-                "icon": "$(refresh)"
-            }
-        ],
-        "menus": {
-            "view/title": [
-                {
-                    "command": "dotfetch.refreshEnvironments",
-                    "when": "view == dotfetchEnvironments",
-                    "group": "navigation"
-                }
-            ],
-            "view/item/context": [
-                {
-                    "command": "dotfetch.copyVariable",
-                    "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
-                    "group": "inline@1"
-                },
-                {
-                    "command": "dotfetch.copyVariableName",
-                    "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
-                    "group": "copy@1"
-                },
-                {
-                    "command": "dotfetch.copyVariablePlaceholder",
-                    "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
-                    "group": "copy@2"
-                }
-            ]
+  "contributes": {
+    "commands": [
+      {
+        "command": "dotfetch.copyVariable",
+        "title": "Copy Variable",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "dotfetch.copyVariableName",
+        "title": "Copy Variable Name"
+      },
+      {
+        "command": "dotfetch.copyVariablePlaceholder",
+        "title": "Copy as {{VARIABLE}}"
+      },
+      {
+        "command": "dotfetch.searchVariable",
+        "title": "Search Variable"
+      },
+      {
+        "command": "dotfetch.showAllVariables",
+        "title": "Show All Variables"
+      },
+      {
+        "command": "dotfetch.refreshEnvironments",
+        "title": "Refresh Environments",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "dotfetch.refreshEnvironments",
+          "when": "view == dotfetchEnvironments",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "dotfetch.copyVariable",
+          "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
+          "group": "inline@1"
         },
+        {
+          "command": "dotfetch.copyVariableName",
+          "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
+          "group": "copy@1"
+        },
+        {
+          "command": "dotfetch.copyVariablePlaceholder",
+          "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
+          "group": "copy@2"
+        }
+      ]
+    },
     "viewsContainers": {
       "activitybar": [
         {
@@ -98,19 +98,22 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node && esbuild ./src/webview/main.js --bundle --outfile=media/script.js --format=iife --platform=browser",
+    "compile": "npm run esbuild-base -- --sourcemap",
+    "watch": "npm run esbuild-base -- --sourcemap --watch",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run typecheck && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test"
-  },
+  }, 
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "@types/vscode": "^1.80.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.12",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.3"

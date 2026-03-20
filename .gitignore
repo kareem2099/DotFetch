@@ -21,3 +21,16 @@ dist/
 # System Files
 .DS_Store
 Thumbs.db
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Test results
+test-results/
+
+# Todo lists (dev only)
+todo_list*.json
+
+# Logs
+*.log
+npm-debug.log*
