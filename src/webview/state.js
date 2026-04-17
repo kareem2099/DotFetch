@@ -1,5 +1,6 @@
 export const state = {
     queryParams: [],
+    headers: [],          // key-value pairs, mirrors queryParams pattern
     history: [],
     collections: {},
     expandedCollections: new Set(),
@@ -15,7 +16,5 @@ export const state = {
     },
     environments: [],
     isRequestInProgress: false,
-    isUpdatingPreview: false,
-    previewTimeout: null,
-    authConfig: { type: 'none', username: '', password: '', token: '' }
+    authConfig: { type: 'none', username: '', password: '', token: '', keyName: '', keyValue: '', keyIn: 'header' }
 };

@@ -3,6 +3,8 @@
   // src/webview/state.js
   var state = {
     queryParams: [],
+    headers: [],
+    // key-value pairs, mirrors queryParams pattern
     history: [],
     collections: {},
     expandedCollections: /* @__PURE__ */ new Set(),
@@ -18,9 +20,7 @@
     },
     environments: [],
     isRequestInProgress: false,
-    isUpdatingPreview: false,
-    previewTimeout: null,
-    authConfig: { type: "none", username: "", password: "", token: "" }
+    authConfig: { type: "none", username: "", password: "", token: "", keyName: "", keyValue: "", keyIn: "header" }
   };
 
   // src/webview/api.js
@@ -55,66 +55,118 @@
     if (!container) return;
     container.innerHTML = "";
     state.queryParams.forEach((param, index) => {
-      const row = document.createElement("div");
-      row.className = "query-param-row";
-      row.style.display = "flex";
-      row.style.gap = "8px";
-      row.style.marginBottom = "8px";
-      row.innerHTML = `
-            <input type="text" class="url-input param-key" placeholder="Key" value="${escapeHtml(param.key)}">
-            <input type="text" class="url-input param-value" placeholder="Value" value="${escapeHtml(param.value)}">
-            <button class="tool-btn remove-param" title="Remove">\u274C</button>
-        `;
-      row.querySelector(".param-key").addEventListener("input", (e) => {
-        state.queryParams[index].key = e.target.value;
-      });
-      row.querySelector(".param-value").addEventListener("input", (e) => {
-        state.queryParams[index].value = e.target.value;
-      });
-      row.querySelector(".remove-param").addEventListener("click", () => {
-        state.queryParams.splice(index, 1);
-        renderQueryParams();
-      });
-      container.appendChild(row);
+      container.appendChild(_makeKVRow(param, index, "queryParams", updateParamsCount));
     });
+    updateParamsCount();
+  }
+  function renderHeaders() {
+    const container = document.getElementById("headers-list");
+    if (!container) return;
+    container.innerHTML = "";
+    state.headers.forEach((header, index) => {
+      container.appendChild(_makeKVRow(header, index, "headers", updateHeadersCount));
+    });
+    updateHeadersCount();
+  }
+  function _makeKVRow(item, index, stateKey, onUpdate) {
+    const row = document.createElement("div");
+    row.className = "kv-row";
+    const keyInput = document.createElement("input");
+    keyInput.type = "text";
+    keyInput.className = "url-input kv-key";
+    keyInput.placeholder = "Key";
+    keyInput.value = escapeHtml(item.key);
+    keyInput.addEventListener("input", (e) => {
+      state[stateKey][index].key = e.target.value;
+      if (onUpdate) onUpdate();
+    });
+    const valInput = document.createElement("input");
+    valInput.type = "text";
+    valInput.className = "url-input kv-value";
+    valInput.placeholder = "Value";
+    valInput.value = escapeHtml(item.value);
+    valInput.addEventListener("input", (e) => {
+      state[stateKey][index].value = e.target.value;
+      if (onUpdate) onUpdate();
+    });
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "tool-btn kv-remove";
+    removeBtn.title = "Remove";
+    removeBtn.textContent = "\xD7";
+    removeBtn.addEventListener("click", () => {
+      state[stateKey].splice(index, 1);
+      stateKey === "headers" ? renderHeaders() : renderQueryParams();
+    });
+    row.appendChild(keyInput);
+    row.appendChild(valInput);
+    row.appendChild(removeBtn);
+    return row;
+  }
+  function updateParamsCount() {
+    const el = document.getElementById("params-count");
+    if (!el) return;
+    const n = state.queryParams.filter((p) => p.key).length;
+    el.textContent = n > 0 ? String(n) : "";
+  }
+  function updateHeadersCount() {
+    const el = document.getElementById("headers-count");
+    if (!el) return;
+    const n = state.headers.filter((h) => h.key).length;
+    el.textContent = n > 0 ? String(n) : "";
+  }
+  function serializeHeaders() {
+    return state.headers.filter((h) => h.key && h.key.trim()).map((h) => `${h.key.trim()}: ${h.value.trim()}`).join("\n");
+  }
+  function parseHeadersIntoState(raw) {
+    if (!raw) {
+      state.headers = [];
+      return;
+    }
+    state.headers = raw.split("\n").map((line) => {
+      const idx = line.indexOf(":");
+      if (idx < 1) return null;
+      return { key: line.substring(0, idx).trim(), value: line.substring(idx + 1).trim() };
+    }).filter(Boolean);
+  }
+  function constructFullUrl() {
+    const urlInput = document.getElementById("url");
+    if (!urlInput) return "";
+    let baseUrl = urlInput.value.trim();
+    if (!baseUrl) return "";
+    const validParams = state.queryParams.filter((p) => p.key && p.value);
+    if (validParams.length > 0) {
+      const separator = baseUrl.includes("?") ? "&" : "?";
+      const qs = validParams.map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join("&");
+      return `${baseUrl}${separator}${qs}`;
+    }
+    return baseUrl;
   }
   function updateEnvironmentIndicator(envName) {
     const badge = document.getElementById("env-badge");
-    if (badge) {
-      badge.textContent = envName === "none" ? "No Environment" : envName;
-      if (envName.toLowerCase().includes("prod")) {
-        badge.style.color = "#f85149";
-        badge.style.background = "rgba(248, 81, 73, 0.15)";
-      } else {
-        badge.style.color = "#58a6ff";
-        badge.style.background = "rgba(56, 139, 253, 0.15)";
-      }
-    }
+    if (!badge) return;
+    badge.textContent = envName === "none" ? "No Environment" : envName;
+    const isProd = envName.toLowerCase().includes("prod");
+    badge.style.color = isProd ? "#f85149" : "#58a6ff";
+    badge.style.background = isProd ? "rgba(248,81,73,0.15)" : "rgba(56,139,253,0.15)";
   }
   function hideModals() {
-    const modal = document.getElementById("save-modal");
-    if (modal) modal.style.display = "none";
+    document.querySelectorAll(".modal").forEach((m) => {
+      m.style.display = "none";
+    });
   }
   function syntaxHighlightJson(json) {
-    if (typeof json !== "string") {
-      json = JSON.stringify(json, null, 2);
-    }
+    if (typeof json !== "string") json = JSON.stringify(json, null, 2);
     json = json.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, function(match) {
-      var cls = "json-number";
-      if (/^"/.test(match)) {
-        if (/:$/.test(match)) {
-          cls = "json-key";
-        } else {
-          cls = "json-string";
-        }
-      } else if (/true|false/.test(match)) {
-        cls = "json-boolean";
-      } else if (/null/.test(match)) {
-        cls = "json-null";
+    return json.replace(
+      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
+      (match) => {
+        let cls = "json-number";
+        if (/^"/.test(match)) cls = /:$/.test(match) ? "json-key" : "json-string";
+        else if (/true|false/.test(match)) cls = "json-boolean";
+        else if (/null/.test(match)) cls = "json-null";
+        return `<span class="${cls}">${match}</span>`;
       }
-      return '<span class="' + cls + '">' + match + "</span>";
-    });
+    );
   }
 
   // src/webview/main.js
@@ -123,6 +175,7 @@
     initApi(vscode);
     setupEventListeners();
     renderQueryParams();
+    renderHeaders();
     post({ type: "webviewReady" });
   });
   function setupEventListeners() {
@@ -134,31 +187,21 @@
       state.queryParams.push({ key: "", value: "" });
       renderQueryParams();
     });
+    document.getElementById("add-header")?.addEventListener("click", () => {
+      state.headers.push({ key: "", value: "" });
+      renderHeaders();
+    });
     document.getElementById("auth-type")?.addEventListener("change", (e) => {
-      const authFields = document.getElementById("auth-fields");
-      const type = e.target.value;
-      if (type === "basic") {
-        authFields.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    <input type="text" id="auth-username" class="url-input" placeholder="Username">
-                    <input type="password" id="auth-password" class="url-input" placeholder="Password">
-                </div>`;
-      } else if (type === "bearer") {
-        authFields.innerHTML = `<input type="text" id="auth-token" class="url-input" placeholder="Bearer Token">`;
-      } else {
-        authFields.innerHTML = "";
-      }
-      state.authConfig.type = type;
+      renderAuthFields(e.target.value);
+      state.authConfig.type = e.target.value;
     });
     document.getElementById("export-curl")?.addEventListener("click", () => {
       const data = getRequestData();
       let curl = `curl -X ${data.method} '${data.url}'`;
-      if (data.headers) {
-        data.headers.split("\n").filter((l) => l.includes(":")).forEach((h) => {
-          curl += ` \\
+      data.headers.split("\n").filter((l) => l.includes(":")).forEach((h) => {
+        curl += ` \\
   -H '${h.trim()}'`;
-        });
-      }
+      });
       if (data.body && ["POST", "PUT", "PATCH"].includes(data.method)) {
         curl += ` \\
   -d '${data.body.replace(/'/g, "\\'")}'`;
@@ -167,67 +210,70 @@
       notify("info", "cURL copied to clipboard!");
     });
     document.getElementById("favorite-btn")?.addEventListener("click", () => {
+      const url = document.getElementById("url")?.value?.trim();
+      if (!url) {
+        notify("error", "Add a URL before saving to favorites");
+        return;
+      }
       post({ type: "toggleFavorite", request: getRequestData() });
       const btn = document.getElementById("favorite-btn");
       const isFav = btn.textContent === "\u{1F31F}";
       btn.textContent = isFav ? "\u2B50" : "\u{1F31F}";
       notify("info", isFav ? "Removed from favorites" : "Added to favorites");
     });
-    document.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        sendRequest();
-      }
-    });
     document.getElementById("save-btn")?.addEventListener("click", () => {
       const modal = document.getElementById("save-modal");
       if (modal) {
         modal.style.display = "flex";
-        document.getElementById("save-name").focus();
-        post({ type: "getCollections" });
+        document.getElementById("save-name")?.focus();
       }
+      post({ type: "getCollections" });
     });
     document.getElementById("confirm-save")?.addEventListener("click", () => {
-      const name = document.getElementById("save-name").value;
-      const collectionId = document.getElementById("save-collection").value;
+      const name = document.getElementById("save-name")?.value?.trim();
+      const collectionId = document.getElementById("save-collection")?.value;
       if (!name) return notify("error", "Please enter a name");
-      post({
-        type: "saveRequest",
-        request: getRequestData(),
-        name,
-        collectionId
-      });
+      post({ type: "saveRequest", request: getRequestData(), name, collectionId });
       hideModals();
     });
     document.getElementById("cancel-save")?.addEventListener("click", hideModals);
     document.getElementById("copy-response")?.addEventListener("click", () => {
-      const body = document.getElementById("response-body").textContent;
+      const body = document.getElementById("response-body")?.textContent || "";
       navigator.clipboard.writeText(body);
       notify("info", "Response copied to clipboard");
     });
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") sendRequest();
+    });
     window.addEventListener("message", handleMessage);
   }
-  function handleMessage(event) {
-    const message = event.data;
-    switch (message.type) {
-      case "environments":
-        state.environments = message.environments || [];
-        updateEnvironmentIndicator(message.activeEnvironment || "none");
+  function renderAuthFields(type) {
+    const container = document.getElementById("auth-fields");
+    if (!container) return;
+    switch (type) {
+      case "basic":
+        container.innerHTML = `
+                <div class="auth-fields-inner">
+                    <input type="text" id="auth-username" class="url-input" placeholder="Username" autocomplete="off">
+                    <input type="password" id="auth-password" class="url-input" placeholder="Password" autocomplete="off">
+                </div>`;
         break;
-      case "loadRequest":
-        loadRequestIntoUI(message.data || message.request);
+      case "bearer":
+        container.innerHTML = `<input type="text" id="auth-token" class="url-input" placeholder="Bearer token" autocomplete="off">`;
         break;
-      case "response":
-        handleResponse(message);
+      case "apikey":
+        container.innerHTML = `
+                <div class="auth-fields-inner">
+                    <input type="text" id="auth-key-name" class="url-input" placeholder="Key name (e.g. X-API-Key)" autocomplete="off">
+                    <input type="text" id="auth-key-value" class="url-input" placeholder="Value" autocomplete="off">
+                    <select id="auth-key-in" class="method-select" style="width:140px;">
+                        <option value="header">Add to Header</option>
+                        <option value="query">Add to Query</option>
+                    </select>
+                </div>`;
         break;
-      case "error":
-        handleError(message);
-        break;
-      case "retryAttempt":
-        handleRetryAttempt(message);
-        break;
-      case "collections":
-        populateCollectionsDropdown(message.collections);
-        break;
+      default:
+        container.innerHTML = "";
     }
   }
   function sendRequest() {
@@ -240,106 +286,147 @@
     }
     state.isRequestInProgress = true;
     btn.textContent = "Cancel \u2715";
-    const request = getRequestData();
-    post({ type: "sendRequest", ...request });
+    post({ type: "sendRequest", ...getRequestData() });
   }
   function getRequestData() {
     const envBadge = document.getElementById("env-badge");
-    const activeEnv = envBadge ? envBadge.textContent === "No Environment" ? "none" : envBadge.textContent : "none";
-    let headers = document.getElementById("headers").value;
-    const authType = document.getElementById("auth-type")?.value;
+    const activeEnv = envBadge?.textContent === "No Environment" ? "none" : envBadge?.textContent || "none";
+    let headers = serializeHeaders();
+    const authType = state.authConfig.type;
     if (authType === "bearer") {
-      const token = document.getElementById("auth-token")?.value;
+      const token = document.getElementById("auth-token")?.value || "";
       if (token) headers = `Authorization: Bearer ${token}
 ` + headers;
     } else if (authType === "basic") {
       const user = document.getElementById("auth-username")?.value || "";
       const pass = document.getElementById("auth-password")?.value || "";
-      if (user || pass) {
-        const encoded = btoa(`${user}:${pass}`);
-        headers = `Authorization: Basic ${encoded}
+      if (user || pass) headers = `Authorization: Basic ${btoa(`${user}:${pass}`)}
 ` + headers;
-      }
+    } else if (authType === "apikey") {
+      const keyName = document.getElementById("auth-key-name")?.value || "";
+      const keyValue = document.getElementById("auth-key-value")?.value || "";
+      const keyIn = document.getElementById("auth-key-in")?.value || "header";
+      if (keyName && keyValue && keyIn === "header") headers = `${keyName}: ${keyValue}
+` + headers;
     }
     return {
       id: state.currentRequest?.id,
       name: state.currentRequest?.name,
-      method: document.getElementById("method").value,
-      url: document.getElementById("url").value,
+      method: document.getElementById("method")?.value || "GET",
+      url: constructFullUrl(),
       headers,
-      body: document.getElementById("body").value,
-      notes: document.getElementById("notes").value,
+      body: document.getElementById("body")?.value || "",
+      notes: document.getElementById("notes")?.value || "",
       queryParams: state.queryParams,
       environment: activeEnv,
       retryCount: parseInt(document.getElementById("retry-count")?.value || "0", 10),
       timeout: parseInt(document.getElementById("timeout")?.value || "10000", 10)
     };
   }
+  function handleMessage(event) {
+    const msg = event.data;
+    switch (msg.type) {
+      case "environments":
+        state.environments = msg.environments || [];
+        updateEnvironmentIndicator(msg.activeEnvironment || "none");
+        break;
+      case "loadRequest":
+        loadRequestIntoUI(msg.data || msg.request);
+        break;
+      case "response":
+        handleResponse(msg);
+        break;
+      case "error":
+        handleError(msg);
+        break;
+      case "retryAttempt":
+        document.getElementById("send").textContent = `Retrying (${msg.attempt}/${msg.total})...`;
+        break;
+      case "collections":
+        populateCollectionsDropdown(msg.collections);
+        break;
+    }
+  }
   function loadRequestIntoUI(req) {
     if (!req) return;
     state.currentRequest = req;
-    document.getElementById("method").value = req.method || "GET";
-    document.getElementById("url").value = req.url || "";
-    document.getElementById("headers").value = req.headers || "";
-    document.getElementById("body").value = req.body || "";
-    document.getElementById("notes").value = req.notes || "";
+    const method = document.getElementById("method");
+    const url = document.getElementById("url");
+    const body = document.getElementById("body");
+    const notes = document.getElementById("notes");
+    if (method) method.value = req.method || "GET";
+    if (url) url.value = (req.url || "").split("?")[0];
+    if (body) body.value = req.body || "";
+    if (notes) notes.value = req.notes || "";
+    parseHeadersIntoState(req.headers || "");
+    renderHeaders();
+    if (req.queryParams?.length) {
+      state.queryParams = req.queryParams.map((p) => ({ ...p }));
+    } else {
+      try {
+        const urlObj = new URL(req.url || "");
+        state.queryParams = [];
+        urlObj.searchParams.forEach((value, key) => state.queryParams.push({ key, value }));
+        if (url) url.value = urlObj.origin + urlObj.pathname;
+      } catch {
+        state.queryParams = [];
+      }
+    }
+    renderQueryParams();
     if (req.retryCount !== void 0) {
-      document.getElementById("retry-count").value = req.retryCount;
+      const rc = document.getElementById("retry-count");
+      if (rc) rc.value = req.retryCount;
     }
     if (req.timeout !== void 0) {
-      document.getElementById("timeout").value = req.timeout;
+      const to = document.getElementById("timeout");
+      if (to) to.value = req.timeout;
     }
-    state.queryParams = req.queryParams || [];
-    renderQueryParams();
     notify("info", `Loaded: ${req.name || "Request"}`);
   }
   function handleResponse(res) {
     state.isRequestInProgress = false;
     const btn = document.getElementById("send");
-    btn.textContent = "Send";
+    if (btn) btn.textContent = "Send";
     const statusBadge = document.getElementById("status-badge");
     const timeBadge = document.getElementById("time-badge");
     const sizeBadge = document.getElementById("size-badge");
     const responseBody = document.getElementById("response-body");
-    statusBadge.textContent = `${res.status} ${res.statusText}`;
-    statusBadge.className = `badge ${res.status < 300 ? "badge-2xx" : res.status < 500 ? "badge-4xx" : "badge-5xx"}`;
-    timeBadge.textContent = `${res.duration} ms`;
-    sizeBadge.textContent = res.size ? `${(res.size / 1024).toFixed(2)} KB` : "-- KB";
-    try {
-      const data = res.data;
-      if (typeof data === "object" && data !== null) {
-        const formatted = syntaxHighlightJson(JSON.stringify(data, null, 2));
-        responseBody.innerHTML = `<pre style="margin:0">${formatted}</pre>`;
-      } else {
-        responseBody.textContent = String(data);
+    if (statusBadge) {
+      statusBadge.textContent = `${res.status} ${res.statusText}`;
+      statusBadge.className = `badge ${res.status < 300 ? "badge-2xx" : res.status < 500 ? "badge-4xx" : "badge-5xx"}`;
+    }
+    if (timeBadge) timeBadge.textContent = `${res.duration} ms`;
+    if (sizeBadge) sizeBadge.textContent = res.size ? `${(res.size / 1024).toFixed(2)} KB` : "-- KB";
+    if (responseBody) {
+      try {
+        if (typeof res.data === "object" && res.data !== null) {
+          responseBody.innerHTML = `<pre style="margin:0">${syntaxHighlightJson(JSON.stringify(res.data, null, 2))}</pre>`;
+        } else {
+          responseBody.textContent = String(res.data);
+        }
+      } catch {
+        responseBody.textContent = String(res.data);
       }
-    } catch (e) {
-      responseBody.textContent = String(res.data);
     }
   }
   function handleError(res) {
     state.isRequestInProgress = false;
     const btn = document.getElementById("send");
-    btn.textContent = "Send";
+    if (btn) btn.textContent = "Send";
     const statusBadge = document.getElementById("status-badge");
     const timeBadge = document.getElementById("time-badge");
     const responseBody = document.getElementById("response-body");
-    statusBadge.textContent = res.cancelled ? "Cancelled" : "Error";
-    statusBadge.className = "badge badge-5xx";
-    timeBadge.textContent = res.duration ? `${res.duration} ms` : "--";
-    responseBody.innerHTML = `<div style="color: #f85149; padding: 8px;">\u26A0\uFE0F ${res.error || "Unknown error"}</div>`;
-  }
-  function handleRetryAttempt(res) {
-    const btn = document.getElementById("send");
-    btn.textContent = `Retrying (${res.attempt}/${res.total})...`;
+    if (statusBadge) {
+      statusBadge.textContent = res.cancelled ? "Cancelled" : "Error";
+      statusBadge.className = "badge badge-5xx";
+    }
+    if (timeBadge) timeBadge.textContent = res.duration ? `${res.duration} ms` : "--";
+    if (responseBody) responseBody.innerHTML = `<div style="color:#f85149;padding:8px;">\u26A0\uFE0F ${res.error || "Unknown error"}</div>`;
   }
   function populateCollectionsDropdown(collections) {
     const select = document.getElementById("save-collection");
     if (!select || !Array.isArray(collections)) return;
-    select.innerHTML = collections.map((c) => `<option value="${c.id}">${c.name}</option>`).join("");
-    if (collections.length === 0) {
-      select.innerHTML = '<option value="">No collections yet \u2014 create one first</option>';
-    }
+    select.innerHTML = collections.length ? collections.map((c) => `<option value="${c.id}">${c.name}</option>`).join("") : '<option value="">No collections yet \u2014 create one first</option>';
   }
 })();
 //# sourceMappingURL=script.js.map

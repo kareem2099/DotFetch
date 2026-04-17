@@ -9,7 +9,8 @@
 </head>
 
 <body>
-    <!-- URL & Send Section -->
+
+    <!-- URL Bar -->
     <div class="url-bar-container">
         <select id="method" class="method-select">
             <option value="GET">GET</option>
@@ -18,89 +19,91 @@
             <option value="DELETE">DELETE</option>
             <option value="PATCH">PATCH</option>
             <option value="HEAD">HEAD</option>
+            <option value="OPTIONS">OPTIONS</option>
         </select>
         <input type="text" id="url" class="url-input" placeholder="https://api.example.com/v1/resource"
-            spellcheck="false">
+            spellcheck="false" autocomplete="off">
         <button id="send" class="send-btn">Send</button>
     </div>
 
-    <!-- Action Toolbar -->
+    <!-- Toolbar -->
     <div class="toolbar">
         <button id="save-btn" class="tool-btn" title="Save to Collection">💾 Save</button>
         <button id="favorite-btn" class="tool-btn" title="Toggle Favorite">⭐</button>
         <button id="export-curl" class="tool-btn" title="Export as cURL">📤 cURL</button>
-        <div style="flex: 1"></div>
-        <div id="env-badge" class="badge"
-            style="font-size: 10px; background: rgba(56, 139, 253, 0.15); color: #58a6ff;">No Environment</div>
+        <div style="flex:1"></div>
+        <span id="env-badge" class="badge env-badge">No Environment</span>
     </div>
 
-    <!-- Main Request Tabs -->
+    <!-- Request Tabs -->
     <div class="tabs-container">
         <div class="tab-header">
-            <button class="tab-btn active" data-tab="params">Params</button>
-            <button class="tab-btn" data-tab="headers">Headers</button>
+            <button class="tab-btn active" data-tab="params">
+                Params <span class="tab-count" id="params-count"></span>
+            </button>
+            <button class="tab-btn" data-tab="headers">
+                Headers <span class="tab-count" id="headers-count"></span>
+            </button>
             <button class="tab-btn" data-tab="auth">Auth</button>
             <button class="tab-btn" data-tab="body">Body</button>
             <button class="tab-btn" data-tab="notes">Notes</button>
-            <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+            <button class="tab-btn" data-tab="settings">⚙️</button>
         </div>
 
-        <!-- Params Tab -->
+        <!-- Params -->
         <div id="params-tab" class="tab-content active">
-            <div id="params-list">
-                <!-- Dynamic rows here -->
-            </div>
-            <button id="add-param" class="tool-btn" style="margin-top: 8px;">+ Add Parameter</button>
+            <div id="params-list"></div>
+            <button id="add-param" class="add-row-btn">+ Add Parameter</button>
         </div>
 
-        <!-- Headers Tab -->
+        <!-- Headers — key-value table, no textarea -->
         <div id="headers-tab" class="tab-content">
-            <textarea id="headers" class="url-input" style="height: 100%; resize: none;"
-                placeholder="Key: Value"></textarea>
+            <div id="headers-list"></div>
+            <button id="add-header" class="add-row-btn">+ Add Header</button>
         </div>
 
-        <!-- Auth Tab -->
+        <!-- Auth -->
         <div id="auth-tab" class="tab-content">
-            <select id="auth-type" class="method-select" style="width: 200px; margin-bottom: 12px;">
-                <option value="none">No Auth</option>
-                <option value="basic">Basic Auth</option>
-                <option value="bearer">Bearer Token</option>
-            </select>
-            <div id="auth-fields"></div>
+            <div class="auth-type-row">
+                <select id="auth-type" class="method-select" style="width:180px;">
+                    <option value="none">No Auth</option>
+                    <option value="basic">Basic Auth</option>
+                    <option value="bearer">Bearer Token</option>
+                    <option value="apikey">API Key</option>
+                </select>
+            </div>
+            <div id="auth-fields" class="auth-fields-wrap"></div>
         </div>
 
-        <!-- Body Tab -->
+        <!-- Body -->
         <div id="body-tab" class="tab-content">
-            <textarea id="body" class="url-input" style="height: 100%; resize: none;"
-                placeholder='{ "id": 123 }'></textarea>
+            <textarea id="body" class="body-textarea" placeholder='{"key": "value"}' spellcheck="false"></textarea>
         </div>
 
-        <!-- Notes Tab -->
+        <!-- Notes -->
         <div id="notes-tab" class="tab-content">
-            <textarea id="notes" class="url-input" style="height: 100%; resize: none;"
-                placeholder="Add documentation..."></textarea>
+            <textarea id="notes" class="body-textarea" placeholder="Add documentation or context for this request..."
+                spellcheck="true"></textarea>
         </div>
 
-        <!-- Settings Tab -->
+        <!-- Settings -->
         <div id="settings-tab" class="tab-content">
-            <div style="display:flex; flex-direction:column; gap:16px; padding: 12px;">
-                <div>
-                    <label style="display:block; margin-bottom:4px; font-size:12px;" class="fg-muted">Retry Count on
-                        Network Failure (0-5)</label>
-                    <input type="number" id="retry-count" class="url-input" style="width: 150px; padding: 6px;" min="0"
-                        max="5" value="0">
+            <div class="settings-inner">
+                <div class="setting-row">
+                    <label>Retry count (0–5)</label>
+                    <input type="number" id="retry-count" class="url-input setting-input" min="0" max="5" value="0"
+                        autocomplete="off">
                 </div>
-                <div>
-                    <label style="display:block; margin-bottom:4px; font-size:12px;" class="fg-muted">Timeout
-                        (ms)</label>
-                    <input type="number" id="timeout" class="url-input" style="width: 150px; padding: 6px;" min="1000"
-                        max="300000" value="10000">
+                <div class="setting-row">
+                    <label>Timeout (ms)</label>
+                    <input type="number" id="timeout" class="url-input setting-input" min="1000" max="300000"
+                        value="10000" autocomplete="off">
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Response Pane -->
+    <!-- Response -->
     <div id="response-container" class="response-container">
         <div class="response-header">
             <div class="response-meta">
@@ -110,25 +113,26 @@
                 <span id="size-badge" class="fg-muted">-- KB</span>
             </div>
             <div class="response-actions">
-                <button id="copy-response" class="tool-btn" style="padding: 2px 8px;">Copy</button>
+                <button id="copy-response" class="tool-btn" style="padding:2px 8px;">Copy</button>
             </div>
         </div>
         <div id="response-body" class="response-body">
-            <div class="fg-muted" style="text-align: center; margin-top: 20px;">Send a request to see the response</div>
+            <div class="fg-muted" style="text-align:center;margin-top:20px;">
+                Send a request to see the response
+            </div>
         </div>
     </div>
 
-    <!-- Modals (Hidden by default) -->
-    <div id="save-modal"
-        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;">
-        <div class="glass" style="padding: 24px; border-radius: 8px; width: 320px;">
-            <h3 style="margin: 0 0 16px 0;">Save Request</h3>
-            <input type="text" id="save-name" class="url-input" style="width: 100%; margin-bottom: 12px;"
-                placeholder="Request name">
-            <select id="save-collection" class="method-select" style="width: 100%; margin-bottom: 16px;"></select>
-            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+    <!-- Save Modal -->
+    <div id="save-modal" class="modal">
+        <div class="modal-box glass">
+            <h3 style="margin:0 0 16px 0;">Save Request</h3>
+            <input type="text" id="save-name" class="url-input" style="width:100%;margin-bottom:12px;"
+                placeholder="Request name" autocomplete="off">
+            <select id="save-collection" class="method-select" style="width:100%;margin-bottom:16px;"></select>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
                 <button id="cancel-save" class="tool-btn">Cancel</button>
-                <button id="confirm-save" class="send-btn" style="padding: 6px 16px;">Save</button>
+                <button id="confirm-save" class="send-btn" style="padding:6px 16px;">Save</button>
             </div>
         </div>
     </div>

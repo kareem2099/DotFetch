@@ -89,6 +89,10 @@ export class DotFetchPanel {
                         break;
                     }
                     case 'toggleFavorite': {
+                        // Guard: ignore empty requests
+                        if (!message.request?.url?.trim()) {
+                            break;
+                        }
                         let requestId = message.request?.id;
                         if (!requestId) {
                             // It's a completely new/unsaved request, we must save it first to have an ID

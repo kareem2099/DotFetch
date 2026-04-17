@@ -10,74 +10,85 @@ export class MainTreeItem extends vscode.TreeItem {
         public readonly request?: RequestData
     ) {
         super(label, collapsibleState);
-        
-        if (type === 'action' && commandId) {
-            this.command = {
-                command: commandId,
-                title: label
-            };
-            this.iconPath = this.getIconForAction(commandId);
-            this.contextValue = 'mainAction';
-        } else if (type === 'favorite' && request) {
-            this.iconPath = new vscode.ThemeIcon('star-full', new vscode.ThemeColor('charts.yellow'));
-            this.description = request.method;
-            this.contextValue = 'favoriteItem';
-            this.command = {
-                command: 'dotfetch.openRequestBuilder',
-                title: 'Open Request',
-                arguments: [request]
-            };
-        } else if (type === 'header' || type === 'section') {
-            this.contextValue = type;
+
+        switch (type) {
+            case 'action':
+                if (commandId) {
+                    this.command = { command: commandId, title: label };
+                    this.iconPath = this.getIconForAction(commandId);
+                }
+                this.contextValue = 'mainAction';
+                break;
+
+            case 'favorite':
+                if (request) {
+                    this.iconPath = new vscode.ThemeIcon('star-full', new vscode.ThemeColor('charts.yellow'));
+                    this.description = request.method;
+                    this.command = {
+                        command: 'dotfetch.openRequestBuilder',
+                        title: 'Open Request',
+                        arguments: [request]
+                    };
+                }
+                this.contextValue = 'favoriteItem';
+                break;
+
+            case 'section':
+                // Collapsible section header — no command, just a container
+                this.iconPath = new vscode.ThemeIcon('star', new vscode.ThemeColor('charts.yellow'));
+                this.contextValue = 'favoritesSection';   // <-- key: used in getChildren
+                break;
+
+            case 'header':
+                // Non-collapsible info/empty-state row
+                this.contextValue = 'infoRow';
+                break;
         }
     }
 
     private getIconForAction(cmd: string): vscode.ThemeIcon {
-        if (cmd === 'dotfetch.openRequestBuilder') return new vscode.ThemeIcon('rocket');
-        if (cmd === 'dotfetch.importCurl') return new vscode.ThemeIcon('terminal');
-        return new vscode.ThemeIcon('star');
+        switch (cmd) {
+            case 'dotfetch.openRequestBuilder': return new vscode.ThemeIcon('rocket');
+            case 'dotfetch.importCurl': return new vscode.ThemeIcon('terminal');
+            default: return new vscode.ThemeIcon('circle-outline');
+        }
     }
 }
 
 export class MainSidebarProvider implements vscode.TreeDataProvider<MainTreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<MainTreeItem | undefined | void> = new vscode.EventEmitter<MainTreeItem | undefined | void>();
-    readonly onDidChangeTreeData: vscode.Event<MainTreeItem | undefined | void> = this._onDidChangeTreeData.event;
+    private _onDidChangeTreeData = new vscode.EventEmitter<MainTreeItem | undefined | void>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-    constructor(private dataManager: DataManager) {}
+    constructor(private dataManager: DataManager) { }
 
-    refresh(): void {
-        this._onDidChangeTreeData.fire();
-    }
+    refresh(): void { this._onDidChangeTreeData.fire(); }
 
-    getTreeItem(element: MainTreeItem): vscode.TreeItem {
-        return element;
-    }
+    getTreeItem(element: MainTreeItem): vscode.TreeItem { return element; }
 
     getChildren(element?: MainTreeItem): Thenable<MainTreeItem[]> {
-        if (element) {
-            if (element.label === '⭐ Favorites') {
-                const favorites = this.dataManager.getFavorites();
-                if (favorites.length === 0) {
-                    const empty = new MainTreeItem('No favorites yet', vscode.TreeItemCollapsibleState.None, 'header');
-                    empty.iconPath = new vscode.ThemeIcon('info');
-                    return Promise.resolve([empty]);
-                }
-                return Promise.resolve(favorites.map(req => 
-                    new MainTreeItem(req.name, vscode.TreeItemCollapsibleState.None, 'favorite', undefined, req)
-                ));
-            }
-            return Promise.resolve([]);
+        if (!element) {
+            return Promise.resolve([
+                new MainTreeItem('New Request', vscode.TreeItemCollapsibleState.None, 'action', 'dotfetch.openRequestBuilder'),
+                new MainTreeItem('Import cURL', vscode.TreeItemCollapsibleState.None, 'action', 'dotfetch.importCurl'),
+                new MainTreeItem('Favorites', vscode.TreeItemCollapsibleState.Expanded, 'section'),
+            ]);
         }
-        
-        const items: MainTreeItem[] = [];
-        
-        // Quick Actions
-        items.push(new MainTreeItem('🚀 New Request', vscode.TreeItemCollapsibleState.None, 'action', 'dotfetch.openRequestBuilder'));
-        items.push(new MainTreeItem('📥 Import cURL', vscode.TreeItemCollapsibleState.None, 'action', 'dotfetch.importCurl'));
-        
-        // Pinned / Favorites Section
-        items.push(new MainTreeItem('⭐ Favorites', vscode.TreeItemCollapsibleState.Expanded, 'section'));
-        
-        return Promise.resolve(items);
+
+        // Use contextValue — never compare labels (labels can change/be localised)
+        if (element.contextValue === 'favoritesSection') {
+            const favorites = this.dataManager.getFavorites();
+            if (favorites.length === 0) {
+                const empty = new MainTreeItem('No favorites yet', vscode.TreeItemCollapsibleState.None, 'header');
+                empty.iconPath = new vscode.ThemeIcon('info');
+                return Promise.resolve([empty]);
+            }
+            return Promise.resolve(
+                favorites.map(req =>
+                    new MainTreeItem(req.name, vscode.TreeItemCollapsibleState.None, 'favorite', undefined, req)
+                )
+            );
+        }
+
+        return Promise.resolve([]);
     }
 }
