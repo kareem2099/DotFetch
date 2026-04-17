@@ -1,671 +1,140 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DotFetch - HTTP Client</title>
-    <!-- CSP will be injected by extension.ts -->
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <!-- App Header -->
-    <div class="app-header">
-      <h1>DotFetch - HTTP Client</h1>
-      <div class="app-controls">
-        <div class="environment-info">
-          <span id="env-indicator" class="env-indicator">No Environment</span>
-        </div>
-        <div class="global-actions">
-          <button
-            id="toggle-variables"
-            title="Toggle Variables Panel (Shows .env variables)"
-            class="toggle-btn"
-            aria-label="Toggle environment variables panel"
-          >
-            📋 Variables
-          </button>
-        </div>
-      </div>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DotFetch - Request Builder</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+    <!-- URL & Send Section -->
+    <div class="url-bar-container">
+        <select id="method" class="method-select">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+            <option value="PATCH">PATCH</option>
+            <option value="HEAD">HEAD</option>
+        </select>
+        <input type="text" id="url" class="url-input" placeholder="https://api.example.com/v1/resource"
+            spellcheck="false">
+        <button id="send" class="send-btn">Send</button>
     </div>
 
-    <!-- Main Content Area -->
-    <div class="main-content" id="main-content">
-      <div class="left-panel" id="request-builder">
-        <!-- Environment Selector -->
-        <div class="environment-selector">
-          <label for="environment">Environment:</label>
-          <select id="environment" aria-label="Select environment">
-            <option value="none">No Environment</option>
-          </select>
-          <button
-            id="refresh-environments"
-            title="Refresh Environments"
-            class="refresh-btn"
-            aria-label="Refresh environment variables"
-          >
-            🔄
-          </button>
-          <div class="env-status" id="env-status">
-            <span id="env-count">0 variables</span>
-          </div>
+    <!-- Action Toolbar -->
+    <div class="toolbar">
+        <button id="save-btn" class="tool-btn" title="Save to Collection">💾 Save</button>
+        <button id="favorite-btn" class="tool-btn" title="Toggle Favorite">⭐</button>
+        <button id="export-curl" class="tool-btn" title="Export as cURL">📤 cURL</button>
+        <div style="flex: 1"></div>
+        <div id="env-badge" class="badge"
+            style="font-size: 10px; background: rgba(56, 139, 253, 0.15); color: #58a6ff;">No Environment</div>
+    </div>
+
+    <!-- Main Request Tabs -->
+    <div class="tabs-container">
+        <div class="tab-header">
+            <button class="tab-btn active" data-tab="params">Params</button>
+            <button class="tab-btn" data-tab="headers">Headers</button>
+            <button class="tab-btn" data-tab="auth">Auth</button>
+            <button class="tab-btn" data-tab="body">Body</button>
+            <button class="tab-btn" data-tab="notes">Notes</button>
+            <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
         </div>
 
-        <!-- Validation Panel -->
-        <div
-          class="validation-panel hidden-element"
-          id="validation-panel"
-          role="alert"
-          aria-live="assertive"
-        >
-          <div class="validation-header">
-            <span class="validation-icon" aria-hidden="true">⚠️</span>
-            <span class="validation-title">Variable Validation</span>
-          </div>
-          <div class="validation-content" id="validation-content">
-            <!-- Validation messages will go here -->
-          </div>
+        <!-- Params Tab -->
+        <div id="params-tab" class="tab-content active">
+            <div id="params-list">
+                <!-- Dynamic rows here -->
+            </div>
+            <button id="add-param" class="tool-btn" style="margin-top: 8px;">+ Add Parameter</button>
         </div>
 
-        <!-- Tabs -->
-        <div class="tabs" role="tablist">
-          <button
-            class="tab-button active"
-            data-tab="request"
-            role="tab"
-            aria-selected="true"
-            aria-controls="request-tab"
-          >
-            Request
-          </button>
-          <button
-            class="tab-button"
-            data-tab="history"
-            role="tab"
-            aria-selected="false"
-            aria-controls="history-tab"
-          >
-            History
-          </button>
-          <button
-            class="tab-button"
-            data-tab="collections"
-            role="tab"
-            aria-selected="false"
-            aria-controls="collections-tab"
-          >
-            Collections
-          </button>
-          <button
-            class="tab-button"
-            data-tab="settings"
-            role="tab"
-            aria-selected="false"
-            aria-controls="settings-tab"
-          >
-            Settings
-          </button>
+        <!-- Headers Tab -->
+        <div id="headers-tab" class="tab-content">
+            <textarea id="headers" class="url-input" style="height: 100%; resize: none;"
+                placeholder="Key: Value"></textarea>
         </div>
 
-        <!-- Request Tab -->
-        <div
-          id="request-tab"
-          class="tab-content active"
-          role="tabpanel"
-          aria-labelledby="request-tab-button"
-        >
-
-          <!-- Template Selector -->
-          <div class="template-selector" id="template-selector-wrap">
-            <label for="template-select">Load Template:</label>
-              <div class="template-row">
-                <select id="template-select" aria-label="Select template">
-                  <option value="">-- Select Template --</option>
-                </select>
-              </div>
-            <button
-              id="load-template"
-              title="Load selected template"
-              class="btn-secondary" 
-            >
-              🔄 Load
-            </button>
-                <button id="delete-template" class="btn-danger-outline" title="Delete selected template">
-              🗑️ Delete
-            </button>
-          </div>
-
-          <!-- Request Section -->
-          <div class="request-section">
-            <!-- Method -->
-            <label for="method">Method:</label>
-            <select id="method" aria-label="HTTP method">
-              <option value="GET">GET</option>
-              <option value="POST">POST</option>
-              <option value="PUT">PUT</option>
-              <option value="DELETE">DELETE</option>
-              <option value="PATCH">PATCH</option>
-              <option value="HEAD">HEAD</option>
-              <option value="OPTIONS">OPTIONS</option>
-            </select>
-
-            <!-- URL -->
-            <label for="url">URL:</label>
-            <div class="input-with-preview">
-              <input
-                type="text"
-                id="url"
-                class="url-input"
-                placeholder="https://api.example.com/endpoint"
-                aria-label="Request URL"
-                spellcheck="false"
-                autocomplete="off"
-              />
-              <div
-                class="preview-hint"
-                id="url-preview"
-                aria-live="polite"
-              ></div>
-            </div>
-
-            <!-- Query Parameters -->
-            <div class="query-params">
-              <label>Query Parameters:</label>
-              <div
-                id="query-params-list"
-                role="list"
-                aria-label="Query parameters"
-              ></div>
-              <button
-                id="add-query-param"
-                class="add-param-btn"
-                aria-label="Add query parameter"
-              >
-                + Add Parameter
-              </button>
-            </div>
-
-            <!-- Headers -->
-            <label for="headers"
-              >Headers (one per line, format: Key: Value):</label
-            >
-            <div class="input-with-preview">
-              <textarea
-                id="headers"
-                class="headers-textarea"
-                rows="4"
-                placeholder="Content-Type: application/json&#10;Authorization: Bearer {{API_TOKEN}}"
-                aria-label="Request headers"
-                spellcheck="false"
-              ></textarea>
-              <div
-                class="preview-hint"
-                id="headers-preview"
-                aria-live="polite"
-              ></div>
-            </div>
-
-            <!-- Authentication -->
-            <label for="auth-type">Authentication:</label>
-            <div class="auth-section">
-              <select id="auth-type" aria-label="Authentication type">
-                <option value="none">None</option>
+        <!-- Auth Tab -->
+        <div id="auth-tab" class="tab-content">
+            <select id="auth-type" class="method-select" style="width: 200px; margin-bottom: 12px;">
+                <option value="none">No Auth</option>
                 <option value="basic">Basic Auth</option>
                 <option value="bearer">Bearer Token</option>
-              </select>
-              <div id="basic-auth-fields" class="auth-fields hidden-element">
-                <div class="auth-row">
-                  <input
-                    type="text"
-                    id="auth-username"
-                    placeholder="Username"
-                    aria-label="Basic auth username"
-                    spellcheck="false"
-                    autocomplete="off"
-                  />
-                  <input
-                    type="password"
-                    id="auth-password"
-                    placeholder="Password"
-                    aria-label="Basic auth password"
-                    autocomplete="off"
-                  />
-                </div>
-                <div class="auth-preview" id="basic-auth-preview"></div>
-              </div>
-              <div id="bearer-auth-fields" class="auth-fields hidden-element">
-                <input
-                  type="text"
-                  id="auth-token"
-                  placeholder="Enter bearer token"
-                  aria-label="Bearer token"
-                  spellcheck="false"
-                  autocomplete="off"
-                />
-                <div class="auth-preview" id="bearer-auth-preview"></div>
-              </div>
-            </div>
-
-            <!-- Body -->
-            <label for="body">Body (JSON or plain text):</label>
-            <div class="input-with-preview">
-              <textarea
-                id="body"
-                class="body-textarea"
-                rows="8"
-                placeholder='{"key": "value"}'
-                aria-label="Request body"
-                spellcheck="false"
-              ></textarea>
-              <div
-                class="preview-hint"
-                id="body-preview"
-                aria-live="polite"
-              ></div>
-            </div>
-
-            <!-- Notes -->
-            <label for="request-notes">Notes (Optional):</label>
-            <div class="input-with-preview">
-              <textarea
-                id="request-notes"
-                class="notes-textarea"
-                rows="2"
-                placeholder="Add documentation or context for this request..."
-                aria-label="Request notes/comments"
-                spellcheck="true"
-              ></textarea>
-            </div>
-
-            <!-- Actions -->
-             <div class="retry-config"> 
-              <label for="retry-count">Retries:</label>
-              <input
-                type="number"
-                id="retry-count"
-                min="0"
-                max="5"
-                step="1"
-                placeholder="0"
-                aria-label="Number of times to retry the request on failure"
-                autocomplete="off"
-              />
-             </div>
-            <div class="actions">
-              <button
-                id="send"
-                class="btn-primary"
-                aria-label="Send HTTP request"
-                title="Send request (Ctrl+Enter)"
-              >
-                Send Request
-              </button>
-              <button
-                id="validate-request"
-                class="btn-secondary"
-                title="Validate environment variables"
-                aria-label="Validate variables"
-              >
-                ✓ Validate
-              </button>
-              <button
-                id="save-request"
-                class="btn-secondary"
-                title="Save request to collection (Ctrl+S)"
-                aria-label="Save request"
-              >
-                💾 Save
-              </button>
-              <button
-                id="save-as-template"
-                class="btn-secondary"
-                title="Save as reusable template"
-                aria-label="Save as template"
-              >
-                📋 Save as Template
-              </button>
-              <button
-                id="export-curl"
-                class="btn-secondary"
-                title="Export as cURL command"
-                aria-label="Export as cURL"
-              >
-                📤 Export cURL
-              </button>
-              <button
-                id="import-curl"
-                class="btn-secondary"
-                title="Import from cURL command"
-                aria-label="Import from cURL"
-              >
-                📋 Import cURL
-              </button>
-            </div>
-          </div>
+            </select>
+            <div id="auth-fields"></div>
         </div>
 
-        <!-- History Tab -->
-        <div
-          id="history-tab"
-          class="tab-content"
-          role="tabpanel"
-          aria-labelledby="history-tab-button"
-        >
-          <div class="history-section">
-            <div class="section-header">
-              <h3>Request History</h3>
-            </div>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-              <input type="text" id="history-search" placeholder="Filter by URL, Method, or Status..." style="flex: 1;" autocomplete="off" spellcheck="false" />
-              <button id="clear-history-search" class="btn-secondary" style="display: none;" title="Clear filter">Clear Filter</button>
-              <button id="clear-history" class="btn-danger-outline" aria-label="Clear all history">Clear All</button>
-            </div>
-            <div
-              id="history-list"
-              role="list"
-              aria-label="Request history"
-            ></div>
-          </div>
+        <!-- Body Tab -->
+        <div id="body-tab" class="tab-content">
+            <textarea id="body" class="url-input" style="height: 100%; resize: none;"
+                placeholder='{ "id": 123 }'></textarea>
         </div>
 
-        <!-- Collections Tab -->
-        <div
-          id="collections-tab"
-          class="tab-content"
-          role="tabpanel"
-          aria-labelledby="collections-tab-button"
-        >
-          <div class="collections-section">
-            <div class="section-header">
-              <h3>Collections</h3>
-              <button
-                id="create-collection"
-                class="btn-primary-outline"
-                aria-label="Create new collection"
-              >
-                + New Collection
-              </button>
-            </div>
-            <div
-              id="collections-list"
-              role="tree"
-              aria-label="Request collections"
-            ></div>
-          </div>
+        <!-- Notes Tab -->
+        <div id="notes-tab" class="tab-content">
+            <textarea id="notes" class="url-input" style="height: 100%; resize: none;"
+                placeholder="Add documentation..."></textarea>
         </div>
 
         <!-- Settings Tab -->
-        <div
-          id="settings-tab"
-          class="tab-content"
-          role="tabpanel"
-          aria-labelledby="settings-tab-button"
-        >
-          <div class="settings-section">
-            <h3>Settings</h3>
-
-            <div class="setting-item">
-              <label for="timeout">Request Timeout (ms):</label>
-              <input
-                type="number"
-                id="timeout"
-                min="1000"
-                max="300000"
-                step="1000"
-                placeholder="10000"
-                aria-label="Request timeout in milliseconds"
-                aria-describedby="timeout-hint"
-                autocomplete="off"
-              />
-              <span id="timeout-hint" class="setting-hint"
-                >Default: 10000ms (10 seconds). Max: 300000ms (5 minutes)</span
-              >
+        <div id="settings-tab" class="tab-content">
+            <div style="display:flex; flex-direction:column; gap:16px; padding: 12px;">
+                <div>
+                    <label style="display:block; margin-bottom:4px; font-size:12px;" class="fg-muted">Retry Count on
+                        Network Failure (0-5)</label>
+                    <input type="number" id="retry-count" class="url-input" style="width: 150px; padding: 6px;" min="0"
+                        max="5" value="0">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:4px; font-size:12px;" class="fg-muted">Timeout
+                        (ms)</label>
+                    <input type="number" id="timeout" class="url-input" style="width: 150px; padding: 6px;" min="1000"
+                        max="300000" value="10000">
+                </div>
             </div>
-
-            <!-- Future Features (disabled for now) -->
-            <div class="setting-item">
-              <label>
-                <input type="checkbox" id="auto-format-json" checked disabled />
-                Auto-format JSON responses
-                <span class="coming-soon">(Coming soon)</span>
-              </label>
-            </div>
-            
-            <div class="setting-item" id="shortcuts-settings">
-              <h4 style="margin: 0 0 5px 0; color: var(--text-highlight);">Keyboard Shortcuts</h4>
-              <p class="setting-hint" style="margin-bottom: 10px;">Click an input to record a new shortcut.</p>
-              
-              <div class="shortcut-row">
-                <label>Send Request</label>
-                <input type="text" class="shortcut-input" data-action="sendRequest" readonly />
-              </div>
-              <div class="shortcut-row">
-                <label>Save Request</label>
-                <input type="text" class="shortcut-input" data-action="saveRequest" readonly />
-              </div>
-              <div class="shortcut-row">
-                <label>Clear Form</label>
-                <input type="text" class="shortcut-input" data-action="clearForm" readonly />
-              </div>
-              <div class="shortcut-row">
-                <label>Close Modal</label>
-                <input type="text" class="shortcut-input" data-action="closeModal" readonly />
-              </div>
-              
-              <div style="margin-top: 10px;">
-                <button id="reset-shortcuts" class="btn-secondary" style="font-size: 11px;">Reset Defaults</button>
-                <span id="shortcut-error" class="error-message" style="display: none; font-size: 11px; margin-left: 10px;"></span>
-              </div>
-            </div>
-
-            <div class="setting-item">
-              <label>
-                <input type="checkbox" id="save-history" checked disabled />
-                Save request history
-                <span class="coming-soon">(Coming soon)</span>
-              </label>
-              <span class="setting-hint">Keep last 50 requests</span>
-            </div>
-
-            <div class="setting-item">
-              <label>
-                <input type="checkbox" id="show-preview" checked disabled />
-                Show variable preview hints
-                <span class="coming-soon">(Coming soon)</span>
-              </label>
-            </div>
-          </div>
         </div>
-
-        <!-- Response Section -->
-        <div id="response-section">
-          <h3>Response</h3>
-          <div id="response-info" class="response-placeholder">
-            <span class="empty-response-text"
-              >No response yet. Send a request to see results here.</span
-            >
-          </div>
-          <div class="response-tabs" role="tablist">
-            <button
-              class="response-tab-button active"
-              data-response-tab="body"
-              role="tab"
-              aria-selected="true"
-              aria-controls="response-body-tab"
-            >
-              Body
-            </button>
-            <button
-              class="response-tab-button"
-              data-response-tab="headers"
-              role="tab"
-              aria-selected="false"
-              aria-controls="response-headers-tab"
-            >
-              Headers
-            </button>
-          </div>
-          <div
-            id="response-body-tab"
-            class="response-content active"
-            role="tabpanel"
-            aria-labelledby="response-body-button"
-          >
-            <pre id="response-body" aria-label="Response body"></pre>
-          </div>
-          <div
-            id="response-headers-tab"
-            class="response-content"
-            role="tabpanel"
-            aria-labelledby="response-headers-button"
-          >
-            <pre id="response-headers" aria-label="Response headers"></pre>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- Modals -->
-
-    <!-- Confirm Action Modal -->
-    <div id="confirm-modal" class="modal" role="dialog" aria-labelledby="confirm-modal-title" aria-modal="true">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="confirm-modal-title">Confirm Action</h3>
-          <button class="modal-close cancel" aria-label="Close modal">&times;</button>
+    <!-- Response Pane -->
+    <div id="response-container" class="response-container">
+        <div class="response-header">
+            <div class="response-meta">
+                <span>Response</span>
+                <span id="status-badge" class="badge">---</span>
+                <span id="time-badge" class="fg-muted">-- ms</span>
+                <span id="size-badge" class="fg-muted">-- KB</span>
+            </div>
+            <div class="response-actions">
+                <button id="copy-response" class="tool-btn" style="padding: 2px 8px;">Copy</button>
+            </div>
         </div>
-        <div class="modal-body">
-          <p id="confirm-modal-message" style="margin: 0; font-size: 14px;"></p>
+        <div id="response-body" class="response-body">
+            <div class="fg-muted" style="text-align: center; margin-top: 20px;">Send a request to see the response</div>
         </div>
-        <div class="modal-footer">
-          <button id="confirm-action-btn" class="btn-danger-outline">Yes, continue</button>
-          <button class="cancel btn-secondary">Cancel</button>
-        </div>
-      </div>
-    </div>
-    <!-- Save Request Modal -->
-    <div
-      id="save-modal"
-      class="modal"
-      role="dialog"
-      aria-labelledby="save-modal-title"
-      aria-modal="true"
-    >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="save-modal-title">Save Request</h3>
-          <button class="modal-close cancel" aria-label="Close modal">
-            &times;
-          </button>
-        </div>
-        <div class="modal-body">
-          <label for="save-name">Request Name:</label>
-          <input
-            type="text"
-            id="save-name"
-            placeholder="My API Request"
-            aria-label="Request name"
-            spellcheck="false"
-            autocomplete="off"
-          />
-
-          <label for="save-collection">Collection:</label>
-          <select id="save-collection" aria-label="Select collection">
-            <option value="">Select Collection</option>
-          </select>
-        </div>
-        <div class="modal-footer">
-          <button id="confirm-save" class="btn-primary">Save</button>
-          <button class="cancel btn-secondary">Cancel</button>
-        </div>
-      </div>
     </div>
 
-    <!-- Create Collection Modal -->
-    <div
-      id="collection-modal"
-      class="modal"
-      role="dialog"
-      aria-labelledby="collection-modal-title"
-      aria-modal="true"
-    >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="collection-modal-title">Create Collection</h3>
-          <button class="modal-close cancel" aria-label="Close modal">
-            &times;
-          </button>
+    <!-- Modals (Hidden by default) -->
+    <div id="save-modal"
+        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;">
+        <div class="glass" style="padding: 24px; border-radius: 8px; width: 320px;">
+            <h3 style="margin: 0 0 16px 0;">Save Request</h3>
+            <input type="text" id="save-name" class="url-input" style="width: 100%; margin-bottom: 12px;"
+                placeholder="Request name">
+            <select id="save-collection" class="method-select" style="width: 100%; margin-bottom: 16px;"></select>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button id="cancel-save" class="tool-btn">Cancel</button>
+                <button id="confirm-save" class="send-btn" style="padding: 6px 16px;">Save</button>
+            </div>
         </div>
-        <div class="modal-body">
-          <label for="collection-name">Collection Name:</label>
-          <input
-            type="text"
-            id="collection-name"
-            placeholder="My Collection"
-            aria-label="Collection name"
-            spellcheck="false"
-            autocomplete="off"
-          />
-        </div>
-        <div class="modal-footer">
-          <button id="confirm-create-collection" class="btn-primary">
-            Create
-          </button>
-          <button class="cancel btn-secondary">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Import cURL Modal -->
-    <div
-      id="curl-import-modal"
-      class="modal"
-      role="dialog"
-      aria-labelledby="curl-modal-title"
-      aria-modal="true"
-    >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="curl-modal-title">Import cURL</h3>
-          <button class="modal-close cancel" aria-label="Close modal">
-            &times;
-          </button>
-        </div>
-        <div class="modal-body">
-          <p class="modal-description">Paste your cURL command below:</p>
-          <textarea
-            id="curl-import-input"
-            rows="6"
-            placeholder="curl -X POST https://api.example.com/endpoint -H 'Content-Type: application/json' -d '{...}'"
-            aria-label="cURL command"
-            spellcheck="false"
-          ></textarea>
-        </div>
-        <div class="modal-footer">
-          <button id="confirm-import-curl" class="btn-primary">Import</button>
-          <button class="cancel btn-secondary">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Save Template Modal -->
-    <div id="template-modal" class="modal" role="dialog" aria-labelledby="template-modal-title" aria-modal="true">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="template-modal-title">Save as Template</h3>
-          <button class="modal-close cancel" aria-label="Close modal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <label for="template-name">Template Name:</label>
-          <input type="text" id="template-name" placeholder="GET octocat" spellcheck="false" autocomplete="off" />
-        </div>
-        <div class="modal-footer">
-          <button id="confirm-save-template" class="btn-primary">Save</button>
-          <button class="cancel btn-secondary">Cancel</button>
-        </div>
-      </div>
     </div>
 
     <script src="./logger.js"></script>
     <script src="./script.js"></script>
-  </body>
+</body>
+
 </html>

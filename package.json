@@ -20,6 +20,41 @@
   "contributes": {
     "commands": [
       {
+        "command": "dotfetch.openRequestBuilder",
+        "title": "New Request",
+        "icon": "$(plus)"
+      },
+      {
+        "command": "dotfetch.importCurl",
+        "title": "Import cURL",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "dotfetch.saveRequest",
+        "title": "Save Request",
+        "icon": "$(save)"
+      },
+      {
+        "command": "dotfetch.createCollection",
+        "title": "New Collection",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dotfetch.refreshCollections",
+        "title": "Refresh Collections",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dotfetch.refreshHistory",
+        "title": "Refresh History",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dotfetch.clearHistory",
+        "title": "Clear History",
+        "icon": "$(trash)"
+      },
+      {
         "command": "dotfetch.copyVariable",
         "title": "Copy Variable",
         "icon": "$(copy)"
@@ -41,6 +76,21 @@
         "title": "Show All Variables"
       },
       {
+        "command": "dotfetch.setActiveEnvironment",
+        "title": "Set as Active Environment",
+        "icon": "$(check)"
+      },
+      {
+        "command": "dotfetch.clearActiveEnvironment",
+        "title": "Clear Active Environment",
+        "icon": "$(circle-slash)"
+      },
+      {
+        "command": "dotfetch.openEnvironmentFile",
+        "title": "Open Environment File",
+        "icon": "$(go-to-file)"
+      },
+      {
         "command": "dotfetch.refreshEnvironments",
         "title": "Refresh Environments",
         "icon": "$(refresh)"
@@ -52,6 +102,26 @@
           "command": "dotfetch.refreshEnvironments",
           "when": "view == dotfetchEnvironments",
           "group": "navigation"
+        },
+        {
+          "command": "dotfetch.createCollection",
+          "when": "view == dotfetchCollections",
+          "group": "navigation@1"
+        },
+        {
+          "command": "dotfetch.refreshCollections",
+          "when": "view == dotfetchCollections",
+          "group": "navigation@2"
+        },
+        {
+          "command": "dotfetch.clearHistory",
+          "when": "view == dotfetchHistory",
+          "group": "navigation@1"
+        },
+        {
+          "command": "dotfetch.refreshHistory",
+          "when": "view == dotfetchHistory",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -69,32 +139,72 @@
           "command": "dotfetch.copyVariablePlaceholder",
           "when": "view == dotfetchEnvironments && viewItem == environmentVariable",
           "group": "copy@2"
+        },
+        {
+          "command": "dotfetch.setActiveEnvironment",
+          "when": "view == dotfetchEnvironments && viewItem == environmentFile",
+          "group": "inline@1"
+        },
+        {
+          "command": "dotfetch.openEnvironmentFile",
+          "when": "view == dotfetchEnvironments && viewItem == environmentFile",
+          "group": "navigation@1"
         }
       ]
     },
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "dotfetch-container",
+          "id": "dotfetch",
           "title": "DotFetch",
           "icon": "media/icon.png"
         }
       ]
     },
     "views": {
-      "dotfetch-container": [
+      "dotfetch": [
         {
-          "id": "dotfetchView",
-          "name": "HTTP Client",
-          "type": "webview",
-          "icon": "media/icon.png"
+          "id": "dotfetchLaunch",
+          "name": "Quick Actions"
+        },
+        {
+          "id": "dotfetchCollections",
+          "name": "Collections"
+        },
+        {
+          "id": "dotfetchHistory",
+          "name": "History"
         },
         {
           "id": "dotfetchEnvironments",
-          "name": "Environment Variables",
-          "icon": "media/icon.png"
+          "name": "Environments"
         }
       ]
+    },
+    "configuration": {
+      "title": "DotFetch",
+      "properties": {
+        "dotfetch.timeout": {
+          "type": "number",
+          "default": 10000,
+          "description": "Request timeout in milliseconds."
+        },
+        "dotfetch.maxHistory": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum number of history items to keep."
+        },
+        "dotfetch.retryCount": {
+          "type": "number",
+          "default": 0,
+          "description": "Number of times to retry a failed request."
+        },
+        "dotfetch.showVariablePreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show variable substitution preview in the editor."
+        }
+      }
     }
   },
   "scripts": {

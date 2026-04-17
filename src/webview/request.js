@@ -5,15 +5,23 @@ import { buildAuthHeader, restoreAuthUI } from './auth.js';
 import { saveState } from './collections.js';
 
 export async function sendRequest() {
+    const sendButton = document.getElementById('send');
+    
+    if (state.isRequestInProgress) {
+        post({ type: 'cancelRequest' });
+        if (sendButton) { sendButton.textContent = 'Send'; }
+        state.isRequestInProgress = false;
+        return;
+    }
+
     const methodSelect = document.getElementById('method');
     const headersTextarea = document.getElementById('headers');
     const bodyTextarea = document.getElementById('body');
     const environmentSelect = document.getElementById('environment');
-    const sendButton = document.getElementById('send');
     const retryCountInput = document.getElementById('retry-count');
     const notesTextarea = document.getElementById('request-notes');
 
-    const method = methodSelect.value;
+    const method = methodSelect ? methodSelect.value : 'GET';
     const url = constructFullUrl();
     const headers = headersTextarea ? headersTextarea.value : '';
     const body = bodyTextarea ? bodyTextarea.value : '';
@@ -32,18 +40,9 @@ export async function sendRequest() {
 
     if (!url || url.trim() === '') { notify('error', 'URL is required'); return; }
 
-    if (state.isRequestInProgress) {
-        post({ type: 'cancelRequest' });
-        if (sendButton) { sendButton.textContent = 'Send Request'; sendButton.disabled = false; }
-        state.isRequestInProgress = false;
-        return;
-    }
-
     state.currentRequest = { method, url, headers, body, notes };
-    if (sendButton) { sendButton.textContent = 'Cancel'; sendButton.disabled = false; }
+    if (sendButton) { sendButton.textContent = 'Cancel ✕'; }
     state.isRequestInProgress = true;
-
-
 
     post({
         type: 'sendRequest',

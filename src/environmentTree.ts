@@ -161,13 +161,37 @@ export class EnvironmentVariablesProvider implements vscode.TreeDataProvider<Env
         });
 
         // Create tree items
+        const activeEnv = this.environmentManager.getActiveEnvironment();
+        
+        // Add "No Environment" option
+        const noEnvIsActive = activeEnv === 'none';
+        const noEnvItem = new EnvironmentTreeItem(
+            noEnvIsActive ? '✓ No Environment' : 'No Environment',
+            vscode.TreeItemCollapsibleState.None,
+            undefined, // No environment
+            undefined, // No variableName
+            undefined, // No variableValue
+            {
+                command: 'dotfetch.clearActiveEnvironment',
+                title: 'Clear Active Environment'
+            }
+        );
+        noEnvItem.description = noEnvIsActive ? 'Active' : 'Clear active environment';
+        noEnvItem.contextValue = noEnvIsActive ? 'environmentClearActive' : 'environmentClear';
+        noEnvItem.iconPath = noEnvIsActive 
+            ? new vscode.ThemeIcon('check', new vscode.ThemeColor('testing.iconPassed'))
+            : new vscode.ThemeIcon('circle-slash');
+        items.push(noEnvItem);
+
         sortedEnvironments.forEach(env => {
             const varCount = Object.keys(env.variables).length;
+            const isActive = env.name === activeEnv;
             
             // Create label
-            const label = varCount === 1 
-                ? `${env.name} (1 var)`
-                : `${env.name} (${varCount} vars)`;
+            let label = env.name;
+            if (isActive) {
+                label = `✓ ${env.name}`;
+            }
 
             // Determine expansion state
             let collapsibleState: vscode.TreeItemCollapsibleState;
@@ -181,10 +205,11 @@ export class EnvironmentVariablesProvider implements vscode.TreeDataProvider<Env
             }
 
             const item = new EnvironmentTreeItem(label, collapsibleState, env);
-
-            // Add description for empty environments
-            if (varCount === 0) {
-                item.description = 'No variables';
+            item.description = isActive ? 'Active' : (varCount === 1 ? '1 var' : `${varCount} vars`);
+            item.contextValue = isActive ? 'environmentFileActive' : 'environmentFile';
+            
+            if (isActive) {
+                item.iconPath = new vscode.ThemeIcon('check', new vscode.ThemeColor('testing.iconPassed'));
             }
 
             items.push(item);

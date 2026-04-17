@@ -1,1199 +1,219 @@
-/* ============================================================================
-   Global Variables & Reset
-   ============================================================================ */
 :root {
-    --vscode-bg: var(--vscode-editor-background, #1e1e1e);
-    --vscode-fg: var(--vscode-input-foreground, var(--vscode-editor-foreground, #cccccc));
-    --border-color: var(--vscode-panel-border, #3e3e42);
-    --input-bg: var(--vscode-input-background, #3c3c3c);
-    --input-border: var(--vscode-input-border, #555555);
-    --accent-color: var(--vscode-button-background, #007acc);
-    --accent-hover: var(--vscode-button-hoverBackground, #005aa3);
-    --success-color: var(--vscode-testing-iconPassed, #28a745);
-    --error-color: var(--vscode-errorForeground, #dc3545);
-    --panel-bg: var(--vscode-sideBar-background, #252526);
-    --widget-bg: var(--vscode-editorWidget-background, #2d2d30);
-    --text-highlight: var(--vscode-foreground, #ffffff);
-    --text-muted: var(--vscode-descriptionForeground, #888888);
-    --warning-bg: var(--text-highlight)3cd;
-    --warning-text: #856404;
-}
-
-* {
-    box-sizing: border-box;
+    --bg-main: var(--vscode-editor-background, #0d1117);
+    --bg-side: var(--vscode-sideBar-background, #161b22);
+    --bg-input: var(--vscode-input-background, #0d1117);
+    --border: var(--vscode-panel-border, #30363d);
+    --fg: var(--vscode-foreground, #c9d1d9);
+    --fg-muted: var(--vscode-descriptionForeground, #8b949e);
+    --accent: var(--vscode-button-background, #238636);
+    --accent-hover: var(--vscode-button-hoverBackground, #2ea043);
+    --success: #3fb950;
+    --error: #f85149;
+    --warning: #d29922;
+    --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --radius: 6px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--fg);
     margin: 0;
     padding: 0;
-    background: var(--vscode-bg);
-    color: var(--vscode-fg);
     height: 100vh;
-    overflow: hidden;
-    font-size: 13px;
-}
-
-/* ============================================================================
-   Custom Scrollbar
-   ============================================================================ */
-::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--vscode-bg);
-}
-
-::-webkit-scrollbar-thumb {
-    background: #424242;
-    border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #4f4f4f;
-}
-
-button {
-    cursor: pointer;
-    font-family: inherit;
-}
-
-/* ============================================================================
-   App Header
-   ============================================================================ */
-.app-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background: var(--panel-bg);
-    border-bottom: 1px solid var(--border-color);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.app-header h1 {
-    margin: 0;
-    color: var(--text-highlight);
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.app-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.env-indicator {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.toggle-btn {
-    background: var(--accent-color);
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    font-size: 12px;
-}
-
-.toggle-btn:hover {
-    background: var(--accent-hover);
-}
-
-/* ============================================================================
-   Layout
-   ============================================================================ */
-.main-content {
-    height: calc(100vh - 55px);
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
-.left-panel {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-    box-sizing: border-box;
+/* Glassmorphism utility */
+.glass {
+    background: rgba(22, 27, 34, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
 }
 
-/* ============================================================================
-   Environment Selector
-   ============================================================================ */
-.environment-selector {
+/* URL Bar Section */
+.url-bar-container {
     display: flex;
+    gap: 8px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
     align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    padding: 12px;
-    background: var(--widget-bg);
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
 }
 
-.environment-selector label {
-    margin: 0;
-    font-weight: 600;
-    white-space: nowrap;
-    color: var(--text-highlight);
+.method-select {
+    width: 100px;
+    padding: 8px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--fg);
+    font-weight: bold;
 }
 
-.environment-selector select {
+.url-input {
     flex: 1;
-    padding: 6px;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    color: var(--vscode-fg);
-    border-radius: 2px;
+    padding: 8px 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--fg);
+    font-family: var(--font-mono);
 }
 
-.refresh-btn {
-    background: transparent;
+.send-btn {
+    background: var(--accent);
+    color: white;
     border: none;
-    color: var(--vscode-fg);
-    padding: 6px;
-    font-size: 16px;
-    transition: color 0.2s;
-}
-
-.refresh-btn:hover {
-    color: var(--accent-color);
-}
-
-.refresh-btn.rotating {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-.env-status {
-    font-size: 11px;
-    color: var(--text-muted);
-    min-width: 80px;
-    text-align: right;
-}
-
-/* ============================================================================
-   Tabs
-   ============================================================================ */
-.tabs {
-    display: flex;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.tab-button {
-    background: transparent;
-    border: none;
-    color: var(--vscode-tab-inactiveForeground, #999);
-    padding: 8px 16px;
+    padding: 8px 24px;
+    border-radius: var(--radius);
+    font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.send-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(35, 134, 54, 0.3);
+}
+
+/* Tabs */
+.tabs-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.tab-header {
+    display: flex;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
     border-bottom: 2px solid transparent;
-    transition: all 0.2s;
+    color: var(--fg-muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
 }
 
-.tab-button:hover {
-    color: var(--text-highlight);
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.tab-button.active {
-    color: var(--text-highlight);
-    border-bottom: 2px solid var(--accent-color);
+.tab-btn.active {
+    color: var(--fg);
+    border-bottom-color: var(--accent);
 }
 
 .tab-content {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
     display: none;
-    animation: fadeIn 0.2s ease-in-out;
 }
 
 .tab-content.active {
-    display: block;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* ============================================================================
-   Forms & Inputs
-   ============================================================================ */
-.request-section label {
-    display: block;
-    margin: 15px 0 5px;
-    font-weight: 600;
-    color: var(--vscode-tab-activeForeground, #ddd);
-    font-size: 12px;
-}
-
-.input-with-preview {
-    position: relative;
-    margin-bottom: 5px;
-}
-
-input[type="text"],
-input[type="number"],
-textarea,
-select {
-    width: 100%;
-    padding: 8px;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    color: var(--vscode-fg);
-    border-radius: 2px;
-    box-sizing: border-box;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 13px;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-    outline: none;
-    border-color: var(--accent-color);
-}
-
-textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
-/* ============================================================================
-   Specific Input Styles
-   ============================================================================ */
-.url-input {
-    width: 100%;
-    padding: 8px;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    color: var(--vscode-fg);
-    border-radius: 2px;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 13px;
-}
-
-.headers-textarea,
-.body-textarea {
-    width: 100%;
-    padding: 8px;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    color: var(--vscode-fg);
-    border-radius: 2px;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 13px;
-    resize: vertical;
-}
-
-.url-input:focus,
-.headers-textarea:focus,
-.body-textarea:focus {
-    outline: none;
-    border-color: var(--accent-color);
-}
-
-/* ============================================================================
-   Previews & Validation
-   ============================================================================ */
-.preview-hint {
-    margin-top: 4px;
-    font-size: 11px;
-    padding: 4px 8px;
-    background: var(--panel-bg);
-    border-left: 3px solid var(--accent-color);
-    color: var(--vscode-descriptionForeground, #aaa);
-    display: none;
-    font-family: 'Consolas', monospace;
-}
-
-.preview-hint.error {
-    border-left-color: var(--error-color);
-    color: #f88;
-}
-
-.validation-panel {
-    margin-bottom: 15px;
-    padding: 10px;
-    border-radius: 4px;
-    background: #2d2d2d;
-    border: 1px solid var(--border-color);
-}
-
-.validation-message {
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.validation-error .error-message {
-    color: #ff6b6b;
-}
-
-/* ============================================================================
-   Query Parameters
-   ============================================================================ */
-.query-params {
-    margin: 10px 0;
-    padding: 10px;
-    background: var(--panel-bg);
-    border-radius: 4px;
-}
-
-.query-param-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 8px;
-}
-
-.remove-btn {
-    color: var(--text-muted);
-    font-size: 14px;
-}
-
-.remove-btn:hover {
-    color: var(--error-color);
-}
-
-#add-query-param {
-    background: transparent;
-    color: var(--accent-color);
-    border: 1px dashed var(--accent-color);
-    padding: 4px 10px;
-    font-size: 11px;
-}
-
-#add-query-param:hover {
-    background: rgba(0, 122, 204, 0.1);
-}
-
-.add-param-btn {
-    background: transparent;
-    color: var(--accent-color);
-    border: 1px dashed var(--accent-color);
-    padding: 6px 12px;
-    font-size: 11px;
-    border-radius: 2px;
-    cursor: pointer;
-}
-
-.add-param-btn:hover {
-    background: rgba(0, 122, 204, 0.1);
-}
-
-/* ============================================================================
-   Actions & Buttons
-   ============================================================================ */
-.actions {
-    margin-top: 20px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-button {
-    padding: 8px 16px;
-    border-radius: 2px;
-    border: none;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-#send {
-    background: var(--accent-color);
-    color: white;
-}
-
-#send:hover {
-    background: var(--accent-hover);
-}
-
-#save-request,
-#validate-request {
-    background: var(--border-color);
-    color: var(--text-highlight);
-}
-
-#save-request:hover,
-#validate-request:hover {
-    background: #4e4e52;
-}
-
-#export-curl,
-#import-curl {
-    background: transparent;
-    border: 1px solid var(--input-border);
-    color: #ccc;
-}
-
-#export-curl:hover,
-#import-curl:hover {
-    border-color: var(--text-muted);
-    color: var(--text-highlight);
-}
-
-/* ============================================================================
-   Button Variants
-   ============================================================================ */
-.btn-primary {
-    background: var(--accent-color);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 2px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-primary:hover {
-    background: var(--accent-hover);
-}
-
-.btn-secondary {
-    background: var(--border-color);
-    color: var(--text-highlight);
-    border: none;
-    padding: 8px 16px;
-    border-radius: 2px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-secondary:hover {
-    background: #4e4e52;
-}
-
-.btn-primary-outline {
-    background: transparent;
-    color: var(--accent-color);
-    border: 1px solid var(--accent-color);
-    padding: 6px 12px;
-    border-radius: 2px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-primary-outline:hover {
-    background: rgba(0, 122, 204, 0.1);
-}
-
-.btn-danger-outline {
-    background: transparent;
-    color: var(--error-color);
-    border: 1px solid var(--error-color);
-    padding: 6px 12px;
-    border-radius: 2px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-danger-outline:hover {
-    background: rgba(220, 53, 69, 0.1);
-}
-
-/* ============================================================================
-   Response Section
-   ============================================================================ */
-#response-section {
-    margin-top: 20px;
-}
-
-#response-info {
-    margin: 10px 0;
-    font-family: 'Consolas', monospace;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-}
-
-.status-success {
-    color: var(--success-color);
-}
-
-.status-error {
-    color: var(--error-color);
-}
-
-.size-warning {
-    background: rgba(220, 53, 69, 0.2);
-    color: #ff6b6b;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    margin-left: 8px;
-    font-weight: 600;
-}
-
-.size-info {
-    background: rgba(107, 185, 240, 0.2);
-    color: #6bb9f0;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    margin-left: 8px;
-    font-weight: 600;
-}
-
-.response-tabs {
-    margin: 10px 0;
-}
-
-.response-tab-button {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    padding: 4px 12px;
-    margin-right: -1px;
-}
-
-.response-tab-button.active {
-    background: var(--border-color);
-    color: var(--text-highlight);
-    border-color: var(--border-color);
-}
-
-#response-body,
-#response-headers {
-    background: var(--vscode-bg);
-    border: 1px solid var(--border-color);
-    padding: 10px;
-    border-radius: 2px;
-    font-family: 'Consolas', monospace;
-    white-space: pre-wrap;
-    max-height: 400px;
-    overflow: auto;
-    font-size: 12px;
-}
-
-.response-placeholder {
-    padding: 20px;
-    text-align: center;
-    font-style: italic;
-}
-
-/* ============================================================================
-   History & Collections
-   ============================================================================ */
-.history-item {
-    background: var(--panel-bg);
-    padding: 10px;
-    border-bottom: 1px solid var(--border-color);
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.history-item:hover {
-    background: var(--widget-bg);
-}
-
-.history-item .method {
-    font-weight: bold;
-    font-size: 11px;
-    padding: 2px 6px;
-    border-radius: 2px;
-    margin-right: 8px;
-    display: inline-block;
-    width: 45px;
-    text-align: center;
-}
-
-/* Method Colors */
-.GET {
-    background: rgba(107, 185, 240, 0.2);
-    color: #6bb9f0;
-}
-
-.POST {
-    background: rgba(46, 204, 113, 0.2);
-    color: #2ecc71;
-}
-
-.PUT {
-    background: rgba(230, 126, 34, 0.2);
-    color: #e67e22;
-}
-
-.DELETE {
-    background: rgba(231, 76, 60, 0.2);
-    color: #e74c3c;
-}
-
-.PATCH {
-    background: rgba(155, 89, 182, 0.2);
-    color: #9b59b6;
-}
-
-.collection-item {
-    padding: 12px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.collection-item:hover {
-    background: var(--widget-bg);
-}
-
-/* ============================================================================
-   Modals
-   ============================================================================ */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
-}
-
-.modal-content {
-    background-color: var(--panel-bg);
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid var(--border-color);
-    width: 400px;
-    border-radius: 4px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-}
-
-.modal-content h3 {
-    margin-top: 0;
-    color: var(--text-highlight);
-}
-
-.modal-content button {
-    margin-top: 15px;
-    margin-right: 10px;
-}
-
-.modal-content .cancel {
-    background: transparent;
-    border: 1px solid var(--input-border);
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.modal-header h3 {
-    margin: 0;
-}
-
-.modal-close {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 24px;
-    cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-close:hover {
-    color: var(--text-highlight);
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-}
-
-.modal-body {
-    margin-bottom: 15px;
-}
-
-.modal-body label {
-    display: block;
-    margin: 10px 0 5px;
-    font-weight: 600;
-    color: var(--vscode-tab-activeForeground, #ddd);
-    font-size: 12px;
-}
-
-.modal-body input[type="text"],
-.modal-body select,
-.modal-body textarea {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-color);
-}
-
-/* ============================================================================
-   Settings Page
-   ============================================================================ */
-.setting-item {
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.setting-item:last-child {
-    border-bottom: none;
-}
-
-.setting-item label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 600;
-    color: var(--vscode-tab-activeForeground, #ddd);
-}
-
-.setting-item input[type="checkbox"] {
-    margin-right: 8px;
-}
-
-.setting-hint {
-    display: block;
-    margin-top: 5px;
-    font-size: 11px;
-    color: var(--text-muted);
-}
-
-/* ============================================================================
-   Section Headers
-   ============================================================================ */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.section-header h3 {
-    margin: 0;
-}
-
-/* ============================================================================
-   Environment Indicator Colors
-   ============================================================================ */
-.env-production {
-    background: rgba(220, 53, 69, 0.2);
-    color: #ff6b6b;
-}
-
-.env-development {
-    background: rgba(46, 204, 113, 0.2);
-    color: #2ecc71;
-}
-
-.env-staging {
-    background: rgba(241, 196, 15, 0.2);
-    color: #f1c40f;
-}
-
-/* ============================================================================
-   Utility Classes (Required for JS Refactoring)
-   ============================================================================ */
-.hidden {
-    display: none !important;
-}
-
-.d-flex {
-    display: flex;
-}
-
-.align-center {
-    align-items: center;
-}
-
-.justify-between {
-    justify-content: space-between;
-}
-
-.flex-1 {
-    flex: 1;
-}
-
-.gap-sm {
-    gap: 5px;
-}
-
-.mb-sm {
-    margin-bottom: 5px;
-}
-
-.ml-md {
-    margin-left: 8px;
-}
-
-.ml-lg {
-    margin-left: 20px;
-}
-
-.mt-sm {
-    margin-top: 5px;
-}
-
-.text-muted {
-    color: var(--text-muted);
-}
-
-.text-center {
-    text-align: center;
-}
-
-.text-error {
-    color: var(--error-color) !important;
-}
-
-.text-success {
-    color: var(--success-color) !important;
-}
-
-.cursor-pointer {
-    cursor: pointer;
-}
-
-.no-bg-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-muted);
-}
-
-/* ============================================================================
-   New Component Styles
-   ============================================================================ */
-.status-badge {
-    padding: 3px 8px;
-    border-radius: 4px;
-    background: var(--vscode-badge-background, #333);
-    color: white;
-}
-
-/* Hover Effect for Request List */
-.request-item-row:hover {
-    background: var(--widget-bg);
-}
-
-/* Collection Header */
-.collection-header {
-    cursor: pointer;
-    padding: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-/* ============================================================================
-   Utility Classes for Dynamic Styling
-   ============================================================================ */
-.flex-row {
-    display: flex;
-    gap: 5px;
-    margin-bottom: 5px;
-}
-
-.flex-between {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.flex-center-align {
-    display: flex;
-    align-items: center;
-}
-
-.flex-wrap-gap {
-    display: flex;
-    gap: 5px;
-    flex-wrap: wrap;
-}
-
-.header-flex {
-    display: flex;
-    align-items: center;
-    margin-bottom: 3px;
-}
-
-.url-span {
-    margin-left: 8px;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.modal-visible {
-    display: block !important;
-}
-
-.preview-visible {
-    display: block;
-}
-
-.preview-hidden {
-    display: none;
-}
-
-.subheader-margin-left {
-    margin-left: 20px;
-    margin-top: 5px;
-}
-
-.item-padding {
-    padding: 5px 8px;
-}
-
-.item-font-small {
-    font-size: 0.9em;
-}
-
-/* Modal visibility states */
-.modal {
-    display: none;
-}
-
-.modal-visible {
-    display: block !important;
-}
-
-/* Request item hover effect */
-.request-item-hover {
-    background: var(--widget-bg);
-}
-
-/* Collection item styling */
-.collection-item {
-    margin-bottom: 5px;
-}
-
-/* Empty state messages */
-.empty-message {
-    padding: 10px;
-    color: var(--text-muted);
-    text-align: center;
-}
-
-/* History/Collection metadata styling */
-.metadata-text {
-    font-size: 0.85em;
-    color: var(--text-muted);
-}
-
-.metadata-separator {
-    margin: 0 5px;
-}
-
-.method-name-span {
-    margin-left: 8px;
-}
-
-.count-badge {
-    opacity: 0.6;
-}
-
-/* Unstyled buttons */
-.icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-muted);
-}
-
-.delete-collection-btn {
-    font-size: 12px;
-}
-
-.delete-request-btn {
-    font-size: 11px;
-}
-
-/* Status/Error message styling */
-.error-message {
-    color: #ff6b6b;
-}
-
-.success-message {
-    color: #28a745;
-}
-
-/* Input styling */
-.param-input {
-    flex: 1;
-}
-
-/* Response info styling */
-.status-badge-response {
-    padding: 3px 8px;
-    border-radius: 4px;
-    background: var(--vscode-badge-background, #333);
-    color: white;
-}
-
-.duration-info {
-    margin-left: 10px;
-}
-
-/* Remove button styling */
-.remove-param-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-muted);
-}
-
-/* Coming soon label */
-.coming-soon {
-    margin-left: 8px;
-    font-size: 0.85em;
-    opacity: 0.6;
-}
-
-/* Empty response message */
-.empty-response-text {
-    color: var(--text-muted);
-}
-
-/* Modal/Panel hidden state */
-.hidden-element {
-    display: none;
-}
-
-/* Modal description text */
-.modal-description {
-    margin-bottom: 10px;
-    color: var(--vscode-descriptionForeground, #aaa);
-    font-size: 12px;
-}
-
-/* ============================================================================
-   Authentication Section (T201, T202)
-   ============================================================================ */
-.auth-section {
-    margin-top: 5px;
-    padding: 10px;
-    background: var(--panel-bg);
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-}
-
-.auth-section select {
-    width: 100%;
-    margin-bottom: 8px;
-}
-
-.auth-fields {
-    margin-top: 8px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
 }
 
-.auth-fields:not(.hidden-element) {
-    display: flex;
-}
-.auth-row {
+/* Action Toolbar */
+.toolbar {
     display: flex;
     gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-side);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
 }
 
-.auth-row input {
-    flex: 1;
-}
-
-.auth-preview {
-    display: none;
-    font-size: 11px;
-    font-family: 'Consolas', monospace;
-    padding: 4px 8px;
-    background: var(--vscode-bg);
-    border-left: 3px solid var(--success-color);
-    color: var(--vscode-descriptionForeground, #aaa);
-    border-radius: 0 2px 2px 0;
-    word-break: break-all;
-}
-
-.auth-preview-visible {
-    display: block;
-}
-
-/* ============================================================================
-   JSON Syntax Highlighting (T203)
-   ============================================================================ */
-.json-key     { color: #9cdcfe; }   /* Light blue - keys */
-.json-string  { color: #ce9178; }   /* Orange - string values */
-.json-number  { color: #b5cea8; }   /* Light green - numbers */
-.json-boolean { color: #569cd6; }   /* Blue - true/false */
-.json-null    { color: #569cd6; }   /* Blue - null */
-
-/* ============================================================================
-   Request Templates (T204)
-   ============================================================================ */
-.template-selector {
-    margin-bottom: 15px;
-    padding: 10px;
-    background: var(--panel-bg);
+.tool-btn {
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
     border-radius: 4px;
-    border: 1px solid var(--border-color);
-    display: none; /* hidden until templates exist */
+    color: var(--fg-muted);
+    font-size: 12px;
+    cursor: pointer;
 }
 
-.template-selector label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 600;
-    color: var(--vscode-tab-activeForeground, #ddd);
+.tool-btn:hover {
+    background: var(--border);
+    color: var(--fg);
+}
+
+/* Response Pane */
+.response-container {
+    height: 35%;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-side);
+}
+
+.response-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
     font-size: 12px;
 }
 
-.template-row {
+.response-meta {
     display: flex;
-    gap: 6px;
+    gap: 12px;
     align-items: center;
 }
 
-.template-row select {
-    flex: 1;
+.badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
 }
 
-.template-row button {
-    padding: 6px 10px;
-    font-size: 11px;
-    white-space: nowrap;
+.badge-2xx { background: rgba(63, 185, 80, 0.15); color: var(--success); }
+.badge-4xx { background: rgba(248, 81, 73, 0.15); color: var(--error); }
+.badge-5xx { background: rgba(210, 153, 34, 0.15); color: var(--warning); }
+
+.response-body {
+    flex: 1;
+    padding: 16px;
+    overflow: auto;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    white-space: pre-wrap;
+    background: var(--bg-main);
 }
-.shortcut-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.shortcut-row label { margin: 0; flex: 1; font-weight: 500; color: var(--text-highlight); }
-.shortcut-row input { width: 150px; text-align: center; cursor: pointer; }
-.shortcut-row input:focus { border-color: var(--accent-color); box-shadow: 0 0 3px var(--accent-color); }
+
+/* Animations */
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.tab-content.active {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Custom JSON highlighting overrides */
+.json-key { color: #79c0ff; }
+.json-string { color: #a5d6ff; }
+.json-number { color: #ffab70; }
+.json-boolean { color: #ff7b72; }
+.json-null { color: #8b949e; font-style: italic; }
+
+/* Utility */
+.fg-muted { color: var(--fg-muted); font-size: 12px; }
+
+/* Response header layout */
+.response-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}

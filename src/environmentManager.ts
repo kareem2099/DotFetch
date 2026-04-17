@@ -17,16 +17,34 @@ export interface Environment {
 export class EnvironmentManager {
 	private static readonly DEBOUNCE_DELAY = 300; // milliseconds
 	private static readonly MAX_SUBSTITUTION_ITERATIONS = 10;
-	
+
 	private environments: Environment[] = [];
 	private watchers: vscode.FileSystemWatcher[] = [];
 	private callbacks: Array<(environments: Environment[]) => void> = [];
 	private reloadTimeout?: NodeJS.Timeout;
 	private isReloading = false;
+	private activeEnvironment: string = 'none';
 
-	constructor() {
+	constructor(private context?: vscode.ExtensionContext) {
+		this.activeEnvironment = context?.globalState.get('activeEnvironment', 'none') || 'none';
 		this.loadEnvironments();
 		this.setupFileWatchers();
+	}
+
+	public getActiveEnvironment(): string {
+		return this.activeEnvironment;
+	}
+
+	public async setActiveEnvironment(name: string): Promise<void> {
+		this.activeEnvironment = name;
+		if (this.context) {
+			await this.context.globalState.update('activeEnvironment', name);
+		}
+		// Notify all listeners without reloading from disk
+		const callbacksCopy = [...this.callbacks];
+		callbacksCopy.forEach(cb => {
+			try { cb(this.environments); } catch (e) { this.logError('Callback error', e); }
+		});
 	}
 
 	private log(message: string): void {
