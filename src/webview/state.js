@@ -16,5 +16,6 @@ export const state = {
     },
     environments: [],
     isRequestInProgress: false,
-    authConfig: { type: 'none', username: '', password: '', token: '', keyName: '', keyValue: '', keyIn: 'header' }
+    authConfig: { type: 'none', username: '', password: '', token: '', keyName: '', keyValue: '', keyIn: 'header' },
+    lastLoadedCollection: null
 };

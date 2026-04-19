@@ -7,11 +7,14 @@
     --fg-muted: var(--vscode-descriptionForeground, #8b949e);
     --accent: var(--vscode-button-background, #238636);
     --accent-hover: var(--vscode-button-hoverBackground, #2ea043);
+    --accent-blue: #58a6ff;
     --success: #3fb950;
     --error: #f85149;
     --warning: #d29922;
     --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    --radius: 6px;
+    --radius: 8px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -78,12 +81,32 @@ body {
     font-weight: 600;
     font-size: 13px;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: var(--transition);
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .send-btn:hover {
     background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.send-btn:active {
+    transform: translateY(0);
+}
+
+.send-btn.loading {
+    background: var(--warning);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
 }
 
 /* ── Toolbar ── */
@@ -98,19 +121,21 @@ body {
 }
 
 .tool-btn {
-    padding: 4px 10px;
+    padding: 4px 12px;
     background: transparent;
     border: 1px solid var(--border);
     border-radius: 4px;
     color: var(--fg-muted);
-    font-size: 12px;
+    font-size: 11px;
     cursor: pointer;
     white-space: nowrap;
+    transition: var(--transition);
 }
 
 .tool-btn:hover {
     background: var(--border);
     color: var(--fg);
+    border-color: var(--fg-muted);
 }
 
 .badge {
@@ -169,15 +194,17 @@ body {
     display: flex;
     align-items: center;
     gap: 4px;
+    transition: var(--transition);
 }
 
 .tab-btn.active {
-    color: var(--fg);
-    border-bottom-color: var(--accent);
+    color: var(--accent-blue);
+    border-bottom-color: var(--accent-blue);
 }
 
 .tab-btn:hover {
     color: var(--fg);
+    background: rgba(255,255,255,0.03);
 }
 
 .tab-count {
@@ -404,8 +431,15 @@ body {
 
 .modal-box {
     padding: 24px;
-    border-radius: 8px;
+    border-radius: 12px;
     width: 320px;
+    box-shadow: var(--shadow);
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .glass {

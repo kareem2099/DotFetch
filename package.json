@@ -4,6 +4,7 @@
   "description": "A professional HTTP client extension for VS Code with environment variables, collections, and cURL support",
   "version": "2.0.0",
   "publisher": "FreeRave",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/kareem2099/DotFetch.git"
@@ -11,7 +12,7 @@
   "engines": {
     "vscode": "^1.80.0"
   },
-  "icon": "media/icon.svg",
+  "icon": "media/icon.png",
   "categories": [
     "Other"
   ],
@@ -38,6 +39,21 @@
         "command": "dotfetch.createCollection",
         "title": "New Collection",
         "icon": "$(add)"
+      },
+      {
+        "command": "dotfetch.deleteCollection",
+        "title": "Delete Collection",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dotfetch.deleteRequestFromCollection",
+        "title": "Delete Request",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dotfetch.editRequestInCollection",
+        "title": "Edit Request",
+        "icon": "$(edit)"
       },
       {
         "command": "dotfetch.refreshCollections",
@@ -141,6 +157,21 @@
           "group": "copy@2"
         },
         {
+          "command": "dotfetch.editRequestInCollection",
+          "when": "view == dotfetchCollections && viewItem == collectionRequest",
+          "group": "inline@1"
+        },
+        {
+          "command": "dotfetch.deleteRequestFromCollection",
+          "when": "view == dotfetchCollections && viewItem == collectionRequest",
+          "group": "inline@2"
+        },
+        {
+          "command": "dotfetch.deleteCollection",
+          "when": "view == dotfetchCollections && viewItem == collectionFolder",
+          "group": "inline@1"
+        },
+        {
           "command": "dotfetch.setActiveEnvironment",
           "when": "view == dotfetchEnvironments && viewItem == environmentFile",
           "group": "inline@1"
@@ -219,16 +250,16 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
+    "@types/node": "^25.6.0",
     "@types/vscode": "^1.80.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
-    "esbuild": "^0.25.12",
-    "eslint": "^9.39.1",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.3"
+    "esbuild": "^0.28.0",
+    "eslint": "^10.2.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.58.2"
   },
   "dependencies": {
-    "axios": "^1.7.7"
+    "axios": "^1.15.0"
   }
 }

@@ -4,12 +4,13 @@ import { EnvironmentManager } from './environmentManager';
 import { EnvironmentVariablesProvider } from './environmentTree';
 import { DataManager, RequestData } from './dataManager';
 import { MainSidebarProvider } from './mainSidebar';
-import { CollectionProvider } from './collectionTree';
+import { CollectionProvider, CollectionTreeItem } from './collectionTree';
 import { HistoryProvider } from './historyTree';
 import { DotFetchPanel } from './webviewPanel';
 import { RequestService } from './requestService';
 import { logger } from './logger';
 import { EnvironmentTreeItem } from './environmentTree';
+import { parseCurl } from './utils/curlParser';
 
 export function activate(context: vscode.ExtensionContext) {
 	logger.log('DotSuite (DotFetch) is now active!');
@@ -44,10 +45,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Register User Commands
 	context.subscriptions.push(
-		vscode.commands.registerCommand('dotfetch.openRequestBuilder', (request?: RequestData) => {
+		vscode.commands.registerCommand('dotfetch.openRequestBuilder', (request?: RequestData, collectionName?: string) => {
 			const panel = DotFetchPanel.createOrShow(context.extensionUri, dataManager, environmentManager, requestService);
 			if (request) {
-				panel.loadRequest(request);
+				panel.loadRequest(request, collectionName);
 			}
 		}),
 
@@ -59,35 +60,17 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 			if (!curlString) { return; }
 
-			// Basic cURL parser
+			const parsed = parseCurl(curlString);
 			const request: RequestData = {
 				id: Date.now().toString(),
 				name: 'Imported from cURL',
-				method: 'GET',
-				url: '',
-				headers: '',
-				body: '',
+				method: parsed.method || 'GET',
+				url: parsed.url || '',
+				headers: parsed.headers || '',
+				body: parsed.body || '',
+				queryParams: parsed.queryParams || [],
 				createdAt: new Date().toISOString()
 			};
-
-			// Extract method
-			const methodMatch = curlString.match(/-X\s+([A-Z]+)/);
-			if (methodMatch) { request.method = methodMatch[1]; }
-
-			// Extract URL (first quoted string or bare URL)
-			const urlMatch = curlString.match(/curl.*?['"]([^'"]+)['"]/);
-			if (urlMatch) { request.url = urlMatch[1]; }
-
-			// Extract headers
-			const headerMatches = [...curlString.matchAll(/-H\s+['"]([^'"]+)['"]/g)];
-			request.headers = headerMatches.map(m => m[1]).join('\n');
-
-			// Extract body
-			const bodyMatch = curlString.match(/(?:-d|--data(?:-raw)?)\s+['"](.+?)['"]\s*(?:-|$)/s);
-			if (bodyMatch) {
-				request.body = bodyMatch[1];
-				if (!methodMatch) { request.method = 'POST'; } // default to POST if body present
-			}
 
 			const panel = DotFetchPanel.createOrShow(context.extensionUri, dataManager, environmentManager, requestService);
 			panel.loadRequest(request);
@@ -136,6 +119,43 @@ export function activate(context: vscode.ExtensionContext) {
 			await environmentManager.setActiveEnvironment('none');
 			environmentTreeProvider.refresh();
 			DotFetchPanel.currentPanel?.updateEnvironments();
+		}),
+
+		vscode.commands.registerCommand('dotfetch.deleteRequestFromCollection', async (item: CollectionTreeItem) => {
+			if (!item.collectionName || !item.request) { return; }
+			const confirmed = await vscode.window.showWarningMessage(
+				`Are you sure you want to delete "${item.request.name}" from "${item.collectionName}"?`,
+				{ modal: true },
+				'Delete'
+			);
+			if (confirmed === 'Delete') {
+				await dataManager.removeFromCollection(item.collectionName, item.request.id);
+				collectionProvider.refresh();
+				vscode.window.showInformationMessage(`Deleted "${item.request.name}"`);
+			}
+		}),
+
+		vscode.commands.registerCommand('dotfetch.deleteCollection', async (item: CollectionTreeItem) => {
+			if (!item.collectionName) { return; }
+			if (item.collectionName === 'Templates') {
+				return vscode.window.showErrorMessage('The Templates collection cannot be deleted.');
+			}
+			const confirmed = await vscode.window.showWarningMessage(
+				`Are you sure you want to delete the entire "${item.collectionName}" collection?`,
+				{ modal: true },
+				'Delete Collection'
+			);
+			if (confirmed === 'Delete Collection') {
+				await dataManager.deleteCollection(item.collectionName);
+				collectionProvider.refresh();
+				vscode.window.showInformationMessage(`Collection "${item.collectionName}" deleted`);
+			}
+		}),
+
+		vscode.commands.registerCommand('dotfetch.editRequestInCollection', (item: CollectionTreeItem) => {
+			if (item.request) {
+				vscode.commands.executeCommand('dotfetch.openRequestBuilder', item.request, item.collectionName);
+			}
 		})
 	);
 

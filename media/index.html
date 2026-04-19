@@ -30,7 +30,8 @@
     <div class="toolbar">
         <button id="save-btn" class="tool-btn" title="Save to Collection">💾 Save</button>
         <button id="favorite-btn" class="tool-btn" title="Toggle Favorite">⭐</button>
-        <button id="export-curl" class="tool-btn" title="Export as cURL">📤 cURL</button>
+        <button id="import-curl" class="tool-btn" title="Import cURL">📥 Import</button>
+        <button id="export-curl" class="tool-btn" title="Export as cURL">📤 Export</button>
         <div style="flex:1"></div>
         <span id="env-badge" class="badge env-badge">No Environment</span>
     </div>
@@ -133,6 +134,19 @@
             <div style="display:flex;justify-content:flex-end;gap:8px;">
                 <button id="cancel-save" class="tool-btn">Cancel</button>
                 <button id="confirm-save" class="send-btn" style="padding:6px 16px;">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- cURL Import Modal -->
+    <div id="curl-import-modal" class="modal">
+        <div class="modal-box glass" style="width: 500px;">
+            <h3 style="margin:0 0 16px 0;">Import cURL</h3>
+            <textarea id="curl-import-input" class="body-textarea" style="width:100%; height: 150px; margin-bottom:12px;"
+                placeholder="Paste your cURL command here..." spellcheck="false"></textarea>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+                <button id="cancel-curl-import" class="tool-btn">Cancel</button>
+                <button id="confirm-curl-import" class="send-btn" style="padding:6px 16px;">Import</button>
             </div>
         </div>
     </div>

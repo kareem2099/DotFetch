@@ -20,7 +20,8 @@
     },
     environments: [],
     isRequestInProgress: false,
-    authConfig: { type: "none", username: "", password: "", token: "", keyName: "", keyValue: "", keyIn: "header" }
+    authConfig: { type: "none", username: "", password: "", token: "", keyName: "", keyValue: "", keyIn: "header" },
+    lastLoadedCollection: null
   };
 
   // src/webview/api.js
@@ -169,6 +170,88 @@
     );
   }
 
+  // src/webview/curl.js
+  function exportToCurl() {
+    const url = constructFullUrl();
+    if (!url || url.trim() === "") {
+      notify("error", "Please enter a URL first");
+      return;
+    }
+    const methodSelect = document.getElementById("method");
+    const bodyTextarea = document.getElementById("body");
+    const method = methodSelect ? methodSelect.value : "GET";
+    const headers = state.headers.filter((h) => h.key.trim()).map((h) => `${h.key.trim()}: ${h.value.trim()}`).join("\n");
+    const body = bodyTextarea ? bodyTextarea.value : "";
+    let cmdParts = ["curl"];
+    if (method !== "GET") {
+      cmdParts.push("-X", method);
+    }
+    cmdParts.push(`"${url.replace(/"/g, '\\"')}"`);
+    if (headers && headers.trim()) {
+      headers.split("\n").forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed && trimmed.includes(":") && !trimmed.startsWith("#")) {
+          cmdParts.push(`-H "${trimmed.replace(/"/g, '\\"')}"`);
+        }
+      });
+    }
+    if (body && body.trim()) {
+      try {
+        const escaped = JSON.stringify(JSON.parse(body)).replace(/"/g, '\\"');
+        cmdParts.push(`-d "${escaped}"`);
+      } catch (e) {
+        const escaped = body.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
+        cmdParts.push(`-d "${escaped}"`);
+      }
+    }
+    copyToClipboard(cmdParts.join(" \\\n  "), "cURL command copied to clipboard");
+  }
+  function copyToClipboard(text, successMessage) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        notify("info", successMessage);
+      }).catch(() => notify("error", "\u274C Failed to copy to clipboard"));
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        notify("info", successMessage);
+      } catch {
+        notify("error", "\u274C Failed to copy to clipboard");
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+  }
+  function showCurlImportModal() {
+    const modal = document.getElementById("curl-import-modal");
+    const input = document.getElementById("curl-import-input");
+    if (modal) {
+      modal.style.display = "block";
+      modal.classList.add("modal-visible");
+    }
+    if (input) {
+      input.value = "";
+      input.focus();
+    }
+  }
+  function executeCurlImport() {
+    const input = document.getElementById("curl-import-input");
+    const curlText = input ? input.value.trim() : "";
+    if (!curlText) {
+      notify("error", "Please paste a cURL command");
+      return;
+    }
+    post({ type: "importCurl", curl: curlText });
+    hideModals();
+    if (input) input.value = "";
+  }
+
   // src/webview/main.js
   window.addEventListener("load", () => {
     const vscode = acquireVsCodeApi();
@@ -195,20 +278,10 @@
       renderAuthFields(e.target.value);
       state.authConfig.type = e.target.value;
     });
-    document.getElementById("export-curl")?.addEventListener("click", () => {
-      const data = getRequestData();
-      let curl = `curl -X ${data.method} '${data.url}'`;
-      data.headers.split("\n").filter((l) => l.includes(":")).forEach((h) => {
-        curl += ` \\
-  -H '${h.trim()}'`;
-      });
-      if (data.body && ["POST", "PUT", "PATCH"].includes(data.method)) {
-        curl += ` \\
-  -d '${data.body.replace(/'/g, "\\'")}'`;
-      }
-      navigator.clipboard.writeText(curl);
-      notify("info", "cURL copied to clipboard!");
-    });
+    document.getElementById("export-curl")?.addEventListener("click", exportToCurl);
+    document.getElementById("import-curl")?.addEventListener("click", showCurlImportModal);
+    document.getElementById("confirm-curl-import")?.addEventListener("click", executeCurlImport);
+    document.getElementById("cancel-curl-import")?.addEventListener("click", hideModals);
     document.getElementById("favorite-btn")?.addEventListener("click", () => {
       const url = document.getElementById("url")?.value?.trim();
       if (!url) {
@@ -225,15 +298,24 @@
       const modal = document.getElementById("save-modal");
       if (modal) {
         modal.style.display = "flex";
-        document.getElementById("save-name")?.focus();
+        const nameInput = document.getElementById("save-name");
+        if (nameInput) {
+          nameInput.value = state.currentRequest?.name || "";
+          nameInput.focus();
+        }
       }
       post({ type: "getCollections" });
     });
     document.getElementById("confirm-save")?.addEventListener("click", () => {
       const name = document.getElementById("save-name")?.value?.trim();
       const collectionId = document.getElementById("save-collection")?.value;
+      const requestData = getRequestData();
       if (!name) return notify("error", "Please enter a name");
-      post({ type: "saveRequest", request: getRequestData(), name, collectionId });
+      if (!collectionId) return notify("error", "Please select a collection");
+      if (!requestData.url || requestData.url.trim() === "") {
+        return notify("error", "Cannot save an empty request (URL is required)");
+      }
+      post({ type: "saveRequest", request: requestData, name, collectionId });
       hideModals();
     });
     document.getElementById("cancel-save")?.addEventListener("click", hideModals);
@@ -257,9 +339,12 @@
                     <input type="text" id="auth-username" class="url-input" placeholder="Username" autocomplete="off">
                     <input type="password" id="auth-password" class="url-input" placeholder="Password" autocomplete="off">
                 </div>`;
+        document.getElementById("auth-username").addEventListener("input", (e) => state.authConfig.username = e.target.value);
+        document.getElementById("auth-password").addEventListener("input", (e) => state.authConfig.password = e.target.value);
         break;
       case "bearer":
         container.innerHTML = `<input type="text" id="auth-token" class="url-input" placeholder="Bearer token" autocomplete="off">`;
+        document.getElementById("auth-token").addEventListener("input", (e) => state.authConfig.token = e.target.value);
         break;
       case "apikey":
         container.innerHTML = `
@@ -271,6 +356,9 @@
                         <option value="query">Add to Query</option>
                     </select>
                 </div>`;
+        document.getElementById("auth-key-name").addEventListener("input", (e) => state.authConfig.keyName = e.target.value);
+        document.getElementById("auth-key-value").addEventListener("input", (e) => state.authConfig.keyValue = e.target.value);
+        document.getElementById("auth-key-in").addEventListener("change", (e) => state.authConfig.keyIn = e.target.value);
         break;
       default:
         container.innerHTML = "";
@@ -281,11 +369,13 @@
     if (state.isRequestInProgress) {
       post({ type: "cancelRequest" });
       btn.textContent = "Send";
+      btn.classList.remove("loading");
       state.isRequestInProgress = false;
       return;
     }
     state.isRequestInProgress = true;
     btn.textContent = "Cancel \u2715";
+    btn.classList.add("loading");
     post({ type: "sendRequest", ...getRequestData() });
   }
   function getRequestData() {
@@ -318,6 +408,7 @@
       body: document.getElementById("body")?.value || "",
       notes: document.getElementById("notes")?.value || "",
       queryParams: state.queryParams,
+      auth: state.authConfig,
       environment: activeEnv,
       retryCount: parseInt(document.getElementById("retry-count")?.value || "0", 10),
       timeout: parseInt(document.getElementById("timeout")?.value || "10000", 10)
@@ -331,7 +422,7 @@
         updateEnvironmentIndicator(msg.activeEnvironment || "none");
         break;
       case "loadRequest":
-        loadRequestIntoUI(msg.data || msg.request);
+        loadRequestIntoUI(msg.data || msg.request, msg.collectionName);
         break;
       case "response":
         handleResponse(msg);
@@ -347,9 +438,10 @@
         break;
     }
   }
-  function loadRequestIntoUI(req) {
+  function loadRequestIntoUI(req, collectionName) {
     if (!req) return;
     state.currentRequest = req;
+    state.lastLoadedCollection = collectionName || null;
     const method = document.getElementById("method");
     const url = document.getElementById("url");
     const body = document.getElementById("body");
@@ -381,12 +473,37 @@
       const to = document.getElementById("timeout");
       if (to) to.value = req.timeout;
     }
+    if (req.auth) {
+      state.authConfig = { ...req.auth };
+      const authTypeSelect = document.getElementById("auth-type");
+      if (authTypeSelect) authTypeSelect.value = state.authConfig.type;
+      renderAuthFields(state.authConfig.type);
+      if (state.authConfig.type === "basic") {
+        const u = document.getElementById("auth-username");
+        const p = document.getElementById("auth-password");
+        if (u) u.value = state.authConfig.username || "";
+        if (p) p.value = state.authConfig.password || "";
+      } else if (state.authConfig.type === "bearer") {
+        const t = document.getElementById("auth-token");
+        if (t) t.value = state.authConfig.token || "";
+      } else if (state.authConfig.type === "apikey") {
+        const n = document.getElementById("auth-key-name");
+        const v = document.getElementById("auth-key-value");
+        const i = document.getElementById("auth-key-in");
+        if (n) n.value = state.authConfig.keyName || "";
+        if (v) v.value = state.authConfig.keyValue || "";
+        if (i) i.value = state.authConfig.keyIn || "header";
+      }
+    }
     notify("info", `Loaded: ${req.name || "Request"}`);
   }
   function handleResponse(res) {
     state.isRequestInProgress = false;
     const btn = document.getElementById("send");
-    if (btn) btn.textContent = "Send";
+    if (btn) {
+      btn.textContent = "Send";
+      btn.classList.remove("loading");
+    }
     const statusBadge = document.getElementById("status-badge");
     const timeBadge = document.getElementById("time-badge");
     const sizeBadge = document.getElementById("size-badge");
@@ -412,7 +529,10 @@
   function handleError(res) {
     state.isRequestInProgress = false;
     const btn = document.getElementById("send");
-    if (btn) btn.textContent = "Send";
+    if (btn) {
+      btn.textContent = "Send";
+      btn.classList.remove("loading");
+    }
     const statusBadge = document.getElementById("status-badge");
     const timeBadge = document.getElementById("time-badge");
     const responseBody = document.getElementById("response-body");
@@ -427,6 +547,9 @@
     const select = document.getElementById("save-collection");
     if (!select || !Array.isArray(collections)) return;
     select.innerHTML = collections.length ? collections.map((c) => `<option value="${c.id}">${c.name}</option>`).join("") : '<option value="">No collections yet \u2014 create one first</option>';
+    if (state.lastLoadedCollection) {
+      select.value = state.lastLoadedCollection;
+    }
   }
 })();
 //# sourceMappingURL=script.js.map

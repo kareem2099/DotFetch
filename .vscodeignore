@@ -23,10 +23,20 @@ out/logger.js
 out/environmentTree.js
 out/environmentManager.js
 out/utils/**
+roadmap*.md
+.github/**
 
 !out/extension.js
 !package.json
 !README.md
 !CHANGELOG.md
 !LICENSE
-!media/**/*
+
+# Explicitly include only needed media files to avoid maps or junk
+!media/index.html
+!media/styles.css
+!media/script.js
+!media/logger.js
+!media/icon.png
+!media/icon.svg
+!media/screenshot-*.png

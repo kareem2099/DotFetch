@@ -5,6 +5,7 @@ import {
     updateEnvironmentIndicator, syntaxHighlightJson,
     hideModals, constructFullUrl, serializeHeaders, parseHeadersIntoState
 } from './ui.js';
+import { exportToCurl, showCurlImportModal, executeCurlImport } from './curl.js';
 
 window.addEventListener('load', () => {
     const vscode = acquireVsCodeApi();
@@ -43,18 +44,12 @@ function setupEventListeners() {
     });
 
     // Export cURL
-    document.getElementById('export-curl')?.addEventListener('click', () => {
-        const data = getRequestData();
-        let curl = `curl -X ${data.method} '${data.url}'`;
-        data.headers.split('\n').filter(l => l.includes(':')).forEach(h => {
-            curl += ` \\\n  -H '${h.trim()}'`;
-        });
-        if (data.body && ['POST', 'PUT', 'PATCH'].includes(data.method)) {
-            curl += ` \\\n  -d '${data.body.replace(/'/g, "\\'")}'`;
-        }
-        navigator.clipboard.writeText(curl);
-        notify('info', 'cURL copied to clipboard!');
-    });
+    document.getElementById('export-curl')?.addEventListener('click', exportToCurl);
+
+    // Import cURL
+    document.getElementById('import-curl')?.addEventListener('click', showCurlImportModal);
+    document.getElementById('confirm-curl-import')?.addEventListener('click', executeCurlImport);
+    document.getElementById('cancel-curl-import')?.addEventListener('click', hideModals);
 
     // Favorite
     document.getElementById('favorite-btn')?.addEventListener('click', () => {
@@ -75,14 +70,30 @@ function setupEventListeners() {
     // Save modal
     document.getElementById('save-btn')?.addEventListener('click', () => {
         const modal = document.getElementById('save-modal');
-        if (modal) { modal.style.display = 'flex'; document.getElementById('save-name')?.focus(); }
+        if (modal) { 
+            modal.style.display = 'flex'; 
+            const nameInput = document.getElementById('save-name');
+            if (nameInput) {
+                nameInput.value = state.currentRequest?.name || '';
+                nameInput.focus();
+            }
+        }
         post({ type: 'getCollections' });
     });
     document.getElementById('confirm-save')?.addEventListener('click', () => {
         const name = document.getElementById('save-name')?.value?.trim();
         const collectionId = document.getElementById('save-collection')?.value;
+        const requestData = getRequestData();
+
         if (!name) return notify('error', 'Please enter a name');
-        post({ type: 'saveRequest', request: getRequestData(), name, collectionId });
+        if (!collectionId) return notify('error', 'Please select a collection');
+        
+        // Ensure request is not empty (at least has a URL)
+        if (!requestData.url || requestData.url.trim() === '') {
+            return notify('error', 'Cannot save an empty request (URL is required)');
+        }
+
+        post({ type: 'saveRequest', request: requestData, name, collectionId });
         hideModals();
     });
     document.getElementById('cancel-save')?.addEventListener('click', hideModals);
@@ -115,9 +126,12 @@ function renderAuthFields(type) {
                     <input type="text" id="auth-username" class="url-input" placeholder="Username" autocomplete="off">
                     <input type="password" id="auth-password" class="url-input" placeholder="Password" autocomplete="off">
                 </div>`;
+            document.getElementById('auth-username').addEventListener('input', e => state.authConfig.username = e.target.value);
+            document.getElementById('auth-password').addEventListener('input', e => state.authConfig.password = e.target.value);
             break;
         case 'bearer':
             container.innerHTML = `<input type="text" id="auth-token" class="url-input" placeholder="Bearer token" autocomplete="off">`;
+            document.getElementById('auth-token').addEventListener('input', e => state.authConfig.token = e.target.value);
             break;
         case 'apikey':
             container.innerHTML = `
@@ -129,6 +143,9 @@ function renderAuthFields(type) {
                         <option value="query">Add to Query</option>
                     </select>
                 </div>`;
+            document.getElementById('auth-key-name').addEventListener('input', e => state.authConfig.keyName = e.target.value);
+            document.getElementById('auth-key-value').addEventListener('input', e => state.authConfig.keyValue = e.target.value);
+            document.getElementById('auth-key-in').addEventListener('change', e => state.authConfig.keyIn = e.target.value);
             break;
         default:
             container.innerHTML = '';
@@ -142,11 +159,13 @@ function sendRequest() {
     if (state.isRequestInProgress) {
         post({ type: 'cancelRequest' });
         btn.textContent = 'Send';
+        btn.classList.remove('loading');
         state.isRequestInProgress = false;
         return;
     }
     state.isRequestInProgress = true;
     btn.textContent = 'Cancel ✕';
+    btn.classList.add('loading');
     post({ type: 'sendRequest', ...getRequestData() });
 }
 
@@ -183,6 +202,7 @@ function getRequestData() {
         body: document.getElementById('body')?.value || '',
         notes: document.getElementById('notes')?.value || '',
         queryParams: state.queryParams,
+        auth: state.authConfig,
         environment: activeEnv,
         retryCount: parseInt(document.getElementById('retry-count')?.value || '0', 10),
         timeout: parseInt(document.getElementById('timeout')?.value || '10000', 10)
@@ -199,7 +219,7 @@ function handleMessage(event) {
             updateEnvironmentIndicator(msg.activeEnvironment || 'none');
             break;
         case 'loadRequest':
-            loadRequestIntoUI(msg.data || msg.request);
+            loadRequestIntoUI(msg.data || msg.request, msg.collectionName);
             break;
         case 'response':
             handleResponse(msg);
@@ -217,10 +237,10 @@ function handleMessage(event) {
 }
 
 // --- Load request into UI ---
-
-function loadRequestIntoUI(req) {
+function loadRequestIntoUI(req, collectionName) {
     if (!req) return;
     state.currentRequest = req;
+    state.lastLoadedCollection = collectionName || null;
 
     const method = document.getElementById('method');
     const url = document.getElementById('url');
@@ -261,6 +281,31 @@ function loadRequestIntoUI(req) {
         if (to) to.value = req.timeout;
     }
 
+    // Restore Auth
+    if (req.auth) {
+        state.authConfig = { ...req.auth };
+        const authTypeSelect = document.getElementById('auth-type');
+        if (authTypeSelect) authTypeSelect.value = state.authConfig.type;
+        renderAuthFields(state.authConfig.type);
+        
+        if (state.authConfig.type === 'basic') {
+            const u = document.getElementById('auth-username');
+            const p = document.getElementById('auth-password');
+            if (u) u.value = state.authConfig.username || '';
+            if (p) p.value = state.authConfig.password || '';
+        } else if (state.authConfig.type === 'bearer') {
+            const t = document.getElementById('auth-token');
+            if (t) t.value = state.authConfig.token || '';
+        } else if (state.authConfig.type === 'apikey') {
+            const n = document.getElementById('auth-key-name');
+            const v = document.getElementById('auth-key-value');
+            const i = document.getElementById('auth-key-in');
+            if (n) n.value = state.authConfig.keyName || '';
+            if (v) v.value = state.authConfig.keyValue || '';
+            if (i) i.value = state.authConfig.keyIn || 'header';
+        }
+    }
+
     notify('info', `Loaded: ${req.name || 'Request'}`);
 }
 
@@ -269,7 +314,10 @@ function loadRequestIntoUI(req) {
 function handleResponse(res) {
     state.isRequestInProgress = false;
     const btn = document.getElementById('send');
-    if (btn) btn.textContent = 'Send';
+    if (btn) {
+        btn.textContent = 'Send';
+        btn.classList.remove('loading');
+    }
 
     const statusBadge = document.getElementById('status-badge');
     const timeBadge = document.getElementById('time-badge');
@@ -299,7 +347,10 @@ function handleResponse(res) {
 function handleError(res) {
     state.isRequestInProgress = false;
     const btn = document.getElementById('send');
-    if (btn) btn.textContent = 'Send';
+    if (btn) {
+        btn.textContent = 'Send';
+        btn.classList.remove('loading');
+    }
 
     const statusBadge = document.getElementById('status-badge');
     const timeBadge = document.getElementById('time-badge');
@@ -321,4 +372,9 @@ function populateCollectionsDropdown(collections) {
     select.innerHTML = collections.length
         ? collections.map(c => `<option value="${c.id}">${c.name}</option>`).join('')
         : '<option value="">No collections yet — create one first</option>';
+    
+    // Auto-select the collection if we loaded from one
+    if (state.lastLoadedCollection) {
+        select.value = state.lastLoadedCollection;
+    }
 }

@@ -18,7 +18,7 @@ export class CollectionTreeItem extends vscode.TreeItem {
             this.command = {
                 command: 'dotfetch.openRequestBuilder',
                 title: 'Open Request',
-                arguments: [request]
+                arguments: [request, collectionName]
             };
         } else if (isTemplateFolder) {
             this.iconPath = new vscode.ThemeIcon('symbol-parameter', new vscode.ThemeColor('charts.orange'));

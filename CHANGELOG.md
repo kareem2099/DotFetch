@@ -4,6 +4,28 @@ All notable changes to the "dotfetch" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [2.0.0] - 2026-04-19
+
+### 🚀 Package Updates
+- [MODIFY] [package.json](file:///home/kareem/StudioProjects/DotFetch/package.json): Update all dependencies and devDependencies to their latest stable versions.
+
+### 🚀 Major UI/UX Overhaul
+- **New Modular Architecture**: Split monolithic scripts into maintainable modules (`main.js`, `api.js`, `ui.js`, `curl.js`, `state.js`).
+- **Premium Design Refresh**: Enhanced UI with professional glassmorphism, smooth CSS transitions, and VS Code native theme integration.
+- **Improved Request Builder**: Replaced raw textareas with structured key-value tables for Parameters and Headers.
+- **Micro-animations**: Added pulse effects for request loading and smooth modal transitions.
+
+### ✨ Features & Improvements
+- **Auth Persistence**: Full state restoration for Basic, Bearer, and API Key authentication.
+- **Enhanced cURL Handling**: Rewritten cURL import/export logic to match the new structured UI.
+- **Stabilized State**: Robust handling of first-run scenarios and empty history/collections.
+- **Performance**: Optimized rendering logic and reduced bundle size via `esbuild` modularization.
+
+### 🐛 Fixed
+- Resolved environment badge desync issues after webview reloads.
+- Fixed UUID generation for unsaved requests before favoriting.
+- Addressed multiple "undefined" property crashes in the webview.
+
 ## [1.2.0] - 2026-03-19
 
 ### ✨ Added (New Features & Refinements)

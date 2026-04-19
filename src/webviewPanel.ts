@@ -5,6 +5,7 @@ import { DataManager, RequestData } from './dataManager';
 import { EnvironmentManager } from './environmentManager';
 import { RequestService } from './requestService';
 import { logger } from './logger';
+import { parseCurl } from './utils/curlParser';
 
 export class DotFetchPanel {
     public static currentPanel: DotFetchPanel | undefined;
@@ -64,6 +65,21 @@ export class DotFetchPanel {
                     case 'webviewReady':
                         this.handleWebviewReady();
                         break;
+                    case 'importCurl': {
+                        const parsed = parseCurl(message.curl);
+                        const request: RequestData = {
+                            id: Date.now().toString(),
+                            name: 'Imported cURL',
+                            method: parsed.method || 'GET',
+                            url: parsed.url || '',
+                            headers: parsed.headers || '',
+                            body: parsed.body || '',
+                            queryParams: parsed.queryParams || [],
+                            createdAt: new Date().toISOString()
+                        };
+                        this.loadRequest(request);
+                        break;
+                    }
                     case 'sendRequest':
                         await this.handleSendRequest(message);
                         break;
@@ -75,7 +91,7 @@ export class DotFetchPanel {
                     }
                     case 'saveRequest': {
                         const requestData: RequestData = {
-                            id: Date.now().toString(),
+                            id: message.request?.id || Date.now().toString(),
                             name: message.name || 'Untitled',
                             method: message.request?.method || 'GET',
                             url: message.request?.url || '',
@@ -83,9 +99,13 @@ export class DotFetchPanel {
                             body: message.request?.body || '',
                             notes: message.request?.notes,
                             queryParams: message.request?.queryParams,
-                            createdAt: new Date().toISOString(),
+                            auth: message.request?.auth,
+                            retryCount: message.request?.retryCount,
+                            timeout: message.request?.timeout,
+                            createdAt: message.request?.createdAt || new Date().toISOString(),
                         };
                         await this.dataManager.saveToCollection(message.collectionId, requestData);
+                        vscode.window.showInformationMessage(`Request "${requestData.name}" saved to "${message.collectionId}"`);
                         break;
                     }
                     case 'toggleFavorite': {
@@ -127,8 +147,12 @@ export class DotFetchPanel {
         );
     }
 
-    public loadRequest(request: RequestData) {
-        this.panel.webview.postMessage({ type: 'loadRequest', data: request });
+    public loadRequest(request: RequestData, collectionName?: string) {
+        this.panel.webview.postMessage({ 
+            type: 'loadRequest', 
+            data: request,
+            collectionName: collectionName 
+        });
     }
 
     private async handleSendRequest(message: any) {
@@ -157,6 +181,7 @@ export class DotFetchPanel {
                 body: message.body || '',
                 notes: message.notes,
                 queryParams: message.queryParams,
+                auth: message.auth,
                 retryCount: message.retryCount,
                 timeout: message.timeout,
                 status: capturedResponse.status,

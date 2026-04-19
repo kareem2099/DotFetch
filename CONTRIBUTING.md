@@ -55,7 +55,7 @@ If you have an idea for a new feature:
 
 ## 📄 License
 
-By contributing, you agree that your contributions will be licensed under its MIT License.
+By contributing, you agree that your contributions will be licensed under its Apache License 2.0.
 
 ---
 *Happy Coding!* 🚀
