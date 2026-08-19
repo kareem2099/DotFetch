@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as https from 'https';
 import axios, { AxiosResponse } from 'axios';
 import { EnvironmentManager } from './environmentManager';
 import { logger } from './logger';
@@ -37,6 +38,22 @@ export class RequestService {
 
             let substitutedUrl = this.environmentManager.substituteVariables(message.url.trim(), selectedEnvironment);
 
+            // Handle API Key in query parameter mode
+            if (message.auth?.type === 'apikey' && message.auth?.keyIn === 'query') {
+                const keyName = this.environmentManager.substituteVariables(message.auth.keyName || '', selectedEnvironment).trim();
+                const keyValue = this.environmentManager.substituteVariables(message.auth.keyValue || '', selectedEnvironment).trim();
+                if (keyName) {
+                    try {
+                        const parsedUrl = new URL(substitutedUrl);
+                        parsedUrl.searchParams.append(keyName, keyValue);
+                        substitutedUrl = parsedUrl.toString();
+                    } catch {
+                        const sep = substitutedUrl.includes('?') ? '&' : '?';
+                        substitutedUrl = `${substitutedUrl}${sep}${encodeURIComponent(keyName)}=${encodeURIComponent(keyValue)}`;
+                    }
+                }
+            }
+
             try {
                 const urlObj = new URL(substitutedUrl);
                 if (!['http:', 'https:'].includes(urlObj.protocol)) {
@@ -62,6 +79,18 @@ export class RequestService {
                 }
             }
 
+            // If Basic Auth is configured, perform server-side variable substitution before Base64 encoding
+            if (message.auth?.type === 'basic') {
+                const rawUser = message.auth.username || '';
+                const rawPass = message.auth.password || '';
+                const user = this.environmentManager.substituteVariables(rawUser, selectedEnvironment);
+                const pass = this.environmentManager.substituteVariables(rawPass, selectedEnvironment);
+                if (user || pass) {
+                    const basicCreds = Buffer.from(`${user}:${pass}`, 'utf8').toString('base64');
+                    substitutedHeaders['Authorization'] = `Basic ${basicCreds}`;
+                }
+            }
+
             let substitutedBody = message.body || '';
             if (substitutedBody) {
                 substitutedBody = this.environmentManager.substituteVariables(substitutedBody, selectedEnvironment);
@@ -75,45 +104,54 @@ export class RequestService {
             const timeout = (message.timeout && message.timeout > 0 && message.timeout <= RequestService.MAX_TIMEOUT)
                 ? message.timeout : RequestService.DEFAULT_TIMEOUT;
 
+            // SSL verification toggle (rejectUnauthorized: false for localhost/self-signed certs)
+            const httpsAgent = message.sslVerify === false || message.rejectUnauthorized === false
+                ? new https.Agent({ rejectUnauthorized: false })
+                : undefined;
+
             let lastError: any = null;
 
             for (let attempt = 0; attempt <= maxRetries; attempt++) {
                 if (attempt > 0) {
                     webview.postMessage({ type: 'retryAttempt', attempt, total: maxRetries });
-                    await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+                    const backoffMs = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+                    await new Promise(resolve => setTimeout(resolve, backoffMs));
                 }
 
-                this.abortController = new AbortController();
-
                 try {
-                    const response: AxiosResponse = await axios({
+                    this.abortController = new AbortController();
+                    const response = await axios({
                         method: message.method,
                         url: substitutedUrl,
                         headers: substitutedHeaders,
                         data,
                         timeout,
+                        httpsAgent,
+                        signal: this.abortController.signal,
                         validateStatus: () => true,
                         maxContentLength: RequestService.MAX_RESPONSE_SIZE,
-                        maxBodyLength: RequestService.MAX_RESPONSE_SIZE,
-                        signal: this.abortController.signal
+                        maxBodyLength: RequestService.MAX_RESPONSE_SIZE
                     });
 
                     const duration = Date.now() - startTime;
-                    const responseSize = JSON.stringify(response.data).length;
+                    const serializedResponse = typeof response.data === 'string'
+                        ? response.data
+                        : JSON.stringify(response.data ?? '');
+
+                    const responseSize = Buffer.byteLength(serializedResponse, 'utf8');
                     const isLarge = responseSize > RequestService.DISPLAY_THRESHOLD;
 
                     webview.postMessage({
                         type: 'response',
                         status: response.status,
                         statusText: response.statusText,
-                        headers: response.headers,
-                        data: isLarge
-                            ? `[Response too large: ${(responseSize / 1024).toFixed(2)} KB]\n\nFirst 1000 characters:\n${JSON.stringify(response.data).substring(0, 1000)}...`
-                            : response.data,
                         duration,
-                        isLarge,
                         size: responseSize,
-                        attempts: attempt + 1
+                        headers: response.headers,
+                        isLarge,
+                        data: isLarge
+                            ? `[Response too large: ${(responseSize / 1024).toFixed(2)} KB]\n\nFirst 1000 characters:\n${serializedResponse.substring(0, 1000)}...`
+                            : response.data
                     });
                     return;
 
@@ -130,16 +168,127 @@ export class RequestService {
 
             // All attempts failed
             const durationArr = Date.now() - startTime;
-            let errorMessage = 'An error occurred';
+            let errorMessage = 'Network request failed';
+
             if (axios.isAxiosError(lastError)) {
-                errorMessage = lastError.message;
+                const message = typeof lastError.message === 'string' ? lastError.message.trim() : '';
+                const causeMessage = lastError.cause instanceof Error ? lastError.cause.message.trim() : '';
+                const code = lastError.code || (lastError.cause as any)?.code || '';
+
+                errorMessage = message || causeMessage || (code ? `Network error: ${code}` : 'Network request failed');
+                if (code && !errorMessage.includes(code)) {
+                    errorMessage += ` (${code})`;
+                }
             } else if (lastError instanceof Error) {
-                errorMessage = lastError.message;
+                errorMessage = lastError.message?.trim() || lastError.name || 'Network request failed';
+            } else if (lastError) {
+                errorMessage = String(lastError);
             }
+
             webview.postMessage({ type: 'error', error: errorMessage, duration: durationArr });
 
         } catch (error: unknown) {
-            webview.postMessage({ type: 'error', error: String(error), duration: Date.now() - startTime });
+            const durationArr = Date.now() - startTime;
+            let errorMessage = 'Network request failed';
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            } else if (error) {
+                errorMessage = String(error);
+            }
+            webview.postMessage({ type: 'error', error: errorMessage, duration: durationArr });
+        }
+    }
+
+    public async fetchOAuthToken(message: any, webview: vscode.Webview) {
+        try {
+            const selectedEnvironment = message.environment || 'none';
+            const rawTokenUrl = message.tokenUrl || '';
+            const rawClientId = message.clientId || '';
+            const rawClientSecret = message.clientSecret || '';
+            const rawScope = message.scope || '';
+
+            const tokenUrl = this.environmentManager.substituteVariables(rawTokenUrl, selectedEnvironment).trim();
+            const clientId = this.environmentManager.substituteVariables(rawClientId, selectedEnvironment).trim();
+            const clientSecret = this.environmentManager.substituteVariables(rawClientSecret, selectedEnvironment).trim();
+            const scope = this.environmentManager.substituteVariables(rawScope, selectedEnvironment).trim();
+
+            if (!tokenUrl) {
+                webview.postMessage({ type: 'oauthTokenResult', success: false, error: 'Token URL is required' });
+                return;
+            }
+
+            try {
+                const parsed = new URL(tokenUrl);
+                if (!['http:', 'https:'].includes(parsed.protocol)) {
+                    throw new Error('Protocol must be http or https');
+                }
+            } catch {
+                webview.postMessage({ type: 'oauthTokenResult', success: false, error: 'Invalid Token URL format' });
+                return;
+            }
+
+            const params = new URLSearchParams();
+            params.append('grant_type', 'client_credentials');
+            if (scope) { params.append('scope', scope); }
+
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            };
+
+            // RFC 6749 §2.3.1: client_id and client_secret are application/x-www-form-urlencoded before Base64 encoding
+            if (clientId && clientSecret) {
+                const formEncode = (value: string) => encodeURIComponent(value).replace(/%20/g, '+');
+                const encodedClientId = formEncode(clientId);
+                const encodedClientSecret = formEncode(clientSecret);
+                const basicCreds = Buffer.from(`${encodedClientId}:${encodedClientSecret}`, 'utf8').toString('base64');
+                headers['Authorization'] = `Basic ${basicCreds}`;
+            } else if (clientId) {
+                params.append('client_id', clientId);
+                if (clientSecret) { params.append('client_secret', clientSecret); }
+            }
+
+            const httpsAgent = message.sslVerify === false || message.rejectUnauthorized === false
+                ? new https.Agent({ rejectUnauthorized: false })
+                : undefined;
+
+            const response = await axios.post(tokenUrl, params.toString(), {
+                headers,
+                timeout: 15000,
+                httpsAgent,
+                validateStatus: () => true
+            });
+
+            if (response.status >= 200 && response.status < 300 && response.data?.access_token) {
+                webview.postMessage({
+                    type: 'oauthTokenResult',
+                    success: true,
+                    accessToken: response.data.access_token,
+                    tokenType: response.data.token_type || 'Bearer',
+                    expiresIn: response.data.expires_in,
+                    scope: response.data.scope || scope
+                });
+            } else {
+                const errData = response.data;
+                let errMsg = 'Failed to fetch OAuth token';
+                if (typeof errData === 'object' && errData !== null) {
+                    errMsg = errData.error_description || errData.error || JSON.stringify(errData);
+                } else if (typeof errData === 'string' && errData.length > 0) {
+                    errMsg = errData;
+                }
+                webview.postMessage({
+                    type: 'oauthTokenResult',
+                    success: false,
+                    error: `HTTP ${response.status}: ${errMsg}`
+                });
+            }
+        } catch (error: any) {
+            webview.postMessage({
+                type: 'oauthTokenResult',
+                success: false,
+                error: error?.message || 'Network error fetching OAuth token'
+            });
         }
     }
 }
+

@@ -447,3 +447,212 @@ body {
     backdrop-filter: blur(8px);
     border: 1px solid var(--border);
 }
+
+/* ── SSL Warning Badge ── */
+.ssl-badge {
+    background: rgba(210, 153, 34, 0.2);
+    color: #d29922;
+    border: 1px solid rgba(210, 153, 34, 0.4);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* ── Auth Inputs with Visibility Toggle ── */
+.auth-input-group {
+    display: flex;
+    position: relative;
+    align-items: center;
+    width: 100%;
+}
+
+.auth-input-group .url-input {
+    width: 100%;
+    padding-right: 36px;
+}
+
+.auth-toggle-btn {
+    position: absolute;
+    right: 6px;
+    background: transparent;
+    border: none;
+    color: var(--fg-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.auth-toggle-btn:hover {
+    color: var(--fg);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Auth Preview Box ── */
+.auth-preview-box {
+    margin-top: 6px;
+    padding: 7px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    word-break: break-all;
+}
+
+.auth-preview-box.hidden {
+    display: none;
+}
+
+/* ── OAuth 2.0 Client Credentials UI ── */
+.oauth-fetch-btn {
+    align-self: flex-start;
+    padding: 6px 14px;
+    background: var(--accent-blue);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.oauth-fetch-btn:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+.oauth-fetch-btn.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.oauth-token-card {
+    margin-top: 6px;
+    padding: 10px 12px;
+    background: rgba(88, 166, 255, 0.08);
+    border: 1px solid rgba(88, 166, 255, 0.25);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.oauth-token-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.token-status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.token-status-badge.valid {
+    background: rgba(63, 185, 80, 0.2);
+    color: #3fb950;
+}
+
+.token-status-badge.expired {
+    background: rgba(248, 81, 73, 0.2);
+    color: #f85149;
+}
+
+/* ── Response Sub-Tabs & Headers Inspector ── */
+.response-tabs {
+    display: flex;
+    gap: 4px;
+}
+
+.res-tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.res-tab-btn:hover {
+    color: var(--fg);
+}
+
+.res-tab-btn.active {
+    color: var(--accent-blue);
+    border-bottom-color: var(--accent-blue);
+    font-weight: 600;
+}
+
+.response-tab-content {
+    display: none;
+    flex: 1;
+    overflow: hidden;
+    height: 100%;
+}
+
+.response-tab-content.active {
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.15s ease;
+}
+
+.response-headers-list {
+    flex: 1;
+    padding: 10px 16px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--bg-main);
+}
+
+.res-header-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.res-header-table th {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.res-header-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: top;
+}
+
+.res-header-key {
+    color: #79c0ff;
+    font-weight: 600;
+    width: 30%;
+    word-break: break-word;
+}
+
+.res-header-val {
+    color: var(--fg);
+    word-break: break-all;
+}

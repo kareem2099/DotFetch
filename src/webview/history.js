@@ -70,7 +70,7 @@ export function renderHistory() {
 }
 
 export function clearHistory() {
-    if (state.history.length === 0) return;
+    if (state.history.length === 0) {return;}
     confirmAction('Clear all history? This cannot be undone.', () => {
         state.history = [];
         saveState();

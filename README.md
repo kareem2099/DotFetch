@@ -6,7 +6,7 @@
 
 *Modern API Testing Made Simple*
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://marketplace.visualstudio.com/items?itemName=FreeRave.dotfetch)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://marketplace.visualstudio.com/items?itemName=FreeRave.dotfetch)
 [![VS Code](https://img.shields.io/badge/VS_Code-1.80+-blue.svg)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 
@@ -23,9 +23,12 @@ DotFetch is a **powerful, modern HTTP client** built specifically for VS Code. D
 **🎯 Key Benefits:**
 - **Native VS Code Integration** - Seamless experience within your development environment
 - **Environment Variables** - Full support for `.env` files with live substitution
-- **Professional UI** - Dark theme optimized interface matching VS Code aesthetics
-- **Advanced Features** - Collections, history, cURL import/export, and more
-- **Performance Focused** - Fast, reliable, and memory-efficient
+- **Comprehensive Authentication** - API Key (Header & Query), OAuth 2.0 Client Credentials, Bearer Token, and Basic Auth
+- **Developer-Friendly Security** - SSL/TLS verification toggle for localhost development, password visibility toggles, and safe non-persistent credential storage
+- **Professional UI** - Dark theme optimized interface matching VS Code aesthetics with Response Body and Headers inspector tabs
+- **Performance & Memory Protected** - 10MB payload size limits and large response truncation guards
+
+> **v2.1.0 Runtime Verified**: DotFetch v2.1.0 has been runtime-verified across authentication, networking, persistence-security, response-limit, and SSL/TLS scenarios.
 
 ---
 
@@ -63,16 +66,20 @@ DotFetch is a **powerful, modern HTTP client** built specifically for VS Code. D
 <tr>
 <td width="50%">
 
-**Complete HTTP Support**
+**Complete HTTP & Auth Support**
 - ✅ All HTTP Methods (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)
-- ✅ Comprehensive Auth (Bearer, Basic, API Key, OAuth 2.0)
+- ✅ **API Key Auth** (Header or Query Parameter with live preview)
+- ✅ **OAuth 2.0** (Client Credentials flow with ⚡ direct token fetching)
+- ✅ **Bearer Token** & **Basic Auth** (with `{{ENV}}` variable substitution)
+- ✅ **Show/Hide Secret Toggles** (👁️ / 🙈)
+- ✅ **SSL Toggle** for local `https://localhost` / self-signed certs
 - ✅ Request Body (JSON, Text, Form Data)
-- ✅ Custom Headers with validation
-- ✅ Query Parameters management
+- ✅ Structured Key-Value Headers & Query Parameters
 - ✅ Configurable Timeout & Network Retry
 
 **Advanced Request Features**
-- ✅ Pre-Request & Post-Response Scripts
+- ✅ Request Collections with one-click Save & Load
+- ✅ Ephemeral Session Token handling (prevents secret leakage)
 - ✅ Request Templates for reusability
 - ✅ Request History with search & filters
 - ✅ Request validation before sending
@@ -81,12 +88,12 @@ DotFetch is a **powerful, modern HTTP client** built specifically for VS Code. D
 </td>
 <td width="50%">
 
-**Response Analysis**
-- ✅ Formatted JSON responses
-- ✅ Response headers inspection
-- ✅ Visual Payload Size Warnings
-- ✅ Response time measurement
-- ✅ Advanced Error Explanations
+**Response Analysis & Protection**
+- ✅ Formatted JSON responses with syntax highlighting
+- ✅ **Response Headers Inspector** (dedicated key-value table)
+- ✅ Visual Payload Size & Time measurement
+- ✅ **Large Response Guard** (protection against huge payloads)
+- ✅ Advanced Error Explanations & cancellation support
 
 </td>
 </tr>
@@ -200,6 +207,11 @@ DotFetch contributes the following settings:
     "default": 10000,
     "description": "Default request timeout in milliseconds"
   },
+  "dotfetch.sslVerify": {
+    "type": "boolean",
+    "default": true,
+    "description": "Enable SSL certificate verification (disable for localhost or self-signed certs)"
+  },
   "dotfetch.autoSave": {
     "type": "boolean",
     "default": true,
@@ -284,7 +296,9 @@ DotFetch automatically detects these environment files in your workspace:
 - VS Code 1.74+
 - TypeScript 5.0+
 
-### Building
+### Building & Verification
+
+DotFetch uses automated quality gates alongside manual runtime verification.
 
 ```bash
 # Install dependencies
@@ -293,34 +307,50 @@ npm install
 # Development build (watch mode)
 npm run watch
 
-# Production build
+# Production build (bundles extension and webview)
 npm run compile
 
-# Run tests
-npm test
+# Type check
+npm run typecheck
 
 # Lint code
 npm run lint
 ```
+
+Runtime verification covers all authentication flows, networking behavior, credential persistence boundaries, response limits, and SSL/TLS handling.
 
 ### Project Structure
 
 ```
 dotfetch/
 ├── src/
-│   ├── extension.ts          # Main extension entry point
-│   ├── environmentManager.ts # Environment variable handling
-│   ├── environmentTree.ts    # Tree view provider
+│   ├── extension.ts          # Main extension entry point & activation
+│   ├── webviewPanel.ts       # WebView lifecycle, message routing & HTML builder
+│   ├── requestService.ts     # Axios execution engine, SSL Agent & OAuth handler
+│   ├── dataManager.ts        # GlobalState persistence (History & Collections)
+│   ├── environmentManager.ts # Environment variable loading & interpolation
+│   ├── collectionTree.ts     # Sidebar Collections tree view provider
+│   ├── historyTree.ts        # Sidebar History tree view provider
+│   ├── environmentTree.ts    # Sidebar Environment tree view provider
+│   ├── webview/              # Modular Frontend (MVC Architecture)
+│   │   ├── main.js           # Central webview coordinator & entry point
+│   │   ├── request.js        # Request assembling, execution & draft/wire separation
+│   │   ├── auth.js           # Comprehensive Auth flows, live previews & RFC validation
+│   │   ├── ui.js             # Key-value tables, response tabs & headers inspector
+│   │   ├── shortcuts.js      # Keybindings & shortcut customization
+│   │   ├── curl.js           # cURL command generator & parser
+│   │   ├── state.js          # Canonical webview state & auth schema factory
+│   │   └── api.js            # PostMessage abstraction layer
 │   └── test/
 │       └── extension.test.ts # Test suite
 ├── media/
-│   ├── index.html           # Webview UI
-│   ├── script.js            # Frontend logic
-│   ├── styles.css           # Styling & themes
-│   └── icon.png             # Extension icon
-├── package.json             # Extension manifest
-├── tsconfig.json           # TypeScript configuration
-└── CHANGELOG.md            # Release notes
+│   ├── index.html            # Webview HTML template
+│   ├── script.js             # Compiled webview IIFE bundle (via esbuild)
+│   ├── styles.css            # Dark theme & glassmorphic styling
+│   └── icon.png              # Extension icon
+├── package.json              # Extension manifest & configuration schemas
+├── tsconfig.json             # TypeScript configuration
+└── CHANGELOG.md              # Detailed release notes
 ```
 
 ---

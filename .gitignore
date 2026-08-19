@@ -22,8 +22,10 @@ dist/
 .DS_Store
 Thumbs.db
 
-# TypeScript cache
+# TypeScript cache & source maps
 *.tsbuildinfo
+*.map
+**/*.map
 
 # Test results
 test-results/
@@ -34,3 +36,9 @@ todo_list*.json
 # Logs
 *.log
 npm-debug.log*
+
+# Articles & Dev scripts
+articles/
+test-server.js
+test-https-server.js
+test-certs/

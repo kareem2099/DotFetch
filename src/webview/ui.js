@@ -5,22 +5,28 @@ export function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     const tabContent = document.getElementById(tabName + '-tab');
     const tabButton = document.querySelector(`[data-tab="${tabName}"]`);
-    if (tabContent) tabContent.classList.add('active');
-    if (tabButton) tabButton.classList.add('active');
+    if (tabContent) {tabContent.classList.add('active');}
+    if (tabButton) {tabButton.classList.add('active');}
 }
 
 export function escapeHtml(text) {
-    if (!text) return '';
+    if (!text) {return '';}
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+export function confirmAction(message, onConfirm) {
+    if (window.confirm(message)) {
+        onConfirm();
+    }
 }
 
 // --- Query Params ---
 
 export function renderQueryParams() {
     const container = document.getElementById('params-list');
-    if (!container) return;
+    if (!container) {return;}
     container.innerHTML = '';
     state.queryParams.forEach((param, index) => {
         container.appendChild(_makeKVRow(param, index, 'queryParams', updateParamsCount));
@@ -32,7 +38,7 @@ export function renderQueryParams() {
 
 export function renderHeaders() {
     const container = document.getElementById('headers-list');
-    if (!container) return;
+    if (!container) {return;}
     container.innerHTML = '';
     state.headers.forEach((header, index) => {
         container.appendChild(_makeKVRow(header, index, 'headers', updateHeadersCount));
@@ -52,7 +58,7 @@ function _makeKVRow(item, index, stateKey, onUpdate) {
     keyInput.value = escapeHtml(item.key);
     keyInput.addEventListener('input', e => {
         state[stateKey][index].key = e.target.value;
-        if (onUpdate) onUpdate();
+        if (onUpdate) {onUpdate();}
     });
 
     const valInput = document.createElement('input');
@@ -62,7 +68,7 @@ function _makeKVRow(item, index, stateKey, onUpdate) {
     valInput.value = escapeHtml(item.value);
     valInput.addEventListener('input', e => {
         state[stateKey][index].value = e.target.value;
-        if (onUpdate) onUpdate();
+        if (onUpdate) {onUpdate();}
     });
 
     const removeBtn = document.createElement('button');
@@ -83,14 +89,14 @@ function _makeKVRow(item, index, stateKey, onUpdate) {
 // Badge counters on tabs
 function updateParamsCount() {
     const el = document.getElementById('params-count');
-    if (!el) return;
+    if (!el) {return;}
     const n = state.queryParams.filter(p => p.key).length;
     el.textContent = n > 0 ? String(n) : '';
 }
 
 function updateHeadersCount() {
     const el = document.getElementById('headers-count');
-    if (!el) return;
+    if (!el) {return;}
     const n = state.headers.filter(h => h.key).length;
     el.textContent = n > 0 ? String(n) : '';
 }
@@ -112,7 +118,7 @@ export function parseHeadersIntoState(raw) {
         .split('\n')
         .map(line => {
             const idx = line.indexOf(':');
-            if (idx < 1) return null;
+            if (idx < 1) {return null;}
             return { key: line.substring(0, idx).trim(), value: line.substring(idx + 1).trim() };
         })
         .filter(Boolean);
@@ -122,9 +128,9 @@ export function parseHeadersIntoState(raw) {
 
 export function constructFullUrl() {
     const urlInput = document.getElementById('url');
-    if (!urlInput) return '';
+    if (!urlInput) {return '';}
     let baseUrl = urlInput.value.trim();
-    if (!baseUrl) return '';
+    if (!baseUrl) {return '';}
     const validParams = state.queryParams.filter(p => p.key && p.value);
     if (validParams.length > 0) {
         const separator = baseUrl.includes('?') ? '&' : '?';
@@ -138,7 +144,7 @@ export function constructFullUrl() {
 
 export function updateEnvironmentIndicator(envName) {
     const badge = document.getElementById('env-badge');
-    if (!badge) return;
+    if (!badge) {return;}
     badge.textContent = envName === 'none' ? 'No Environment' : envName;
     const isProd = envName.toLowerCase().includes('prod');
     badge.style.color = isProd ? '#f85149' : '#58a6ff';
@@ -151,18 +157,60 @@ export function hideModals() {
     document.querySelectorAll('.modal').forEach(m => { m.style.display = 'none'; });
 }
 
+// --- Response Tabs ---
+
+export function switchResponseTab(tabName) {
+    document.querySelectorAll('.response-tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.res-tab-btn').forEach(b => b.classList.remove('active'));
+    const tabContent = document.getElementById(`response-${tabName}-tab`);
+    const tabButton = document.querySelector(`[data-res-tab="${tabName}"]`);
+    if (tabContent) {tabContent.classList.add('active');}
+    if (tabButton) {tabButton.classList.add('active');}
+}
+
+export function renderResponseHeaders(headers) {
+    const container = document.getElementById('response-headers-list');
+    const badge = document.getElementById('res-headers-count');
+    if (!container) {return;}
+
+    if (!headers || typeof headers !== 'object' || Object.keys(headers).length === 0) {
+        container.innerHTML = `<div class="fg-muted" style="text-align:center;margin-top:20px;">No response headers received</div>`;
+        if (badge) {badge.textContent = '';}
+        return;
+    }
+
+    const headerKeys = Object.keys(headers);
+    if (badge) {badge.textContent = String(headerKeys.length);}
+
+    let html = `<table class="res-header-table"><thead><tr><th>Header</th><th>Value</th></tr></thead><tbody>`;
+    for (const key of headerKeys) {
+        const val = typeof headers[key] === 'object' ? JSON.stringify(headers[key]) : String(headers[key]);
+        html += `<tr><td class="res-header-key">${escapeHtml(key)}</td><td class="res-header-val">${escapeHtml(val)}</td></tr>`;
+    }
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
+
+// --- SSL indicator ---
+
+export function updateSslIndicator(sslVerify) {
+    const badge = document.getElementById('ssl-badge');
+    if (!badge) {return;}
+    badge.style.display = sslVerify === false ? 'inline-block' : 'none';
+}
+
 // --- JSON syntax highlighting ---
 
 export function syntaxHighlightJson(json) {
-    if (typeof json !== 'string') json = JSON.stringify(json, null, 2);
+    if (typeof json !== 'string') {json = JSON.stringify(json, null, 2);}
     json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return json.replace(
         /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
         match => {
             let cls = 'json-number';
-            if (/^"/.test(match)) cls = /:$/.test(match) ? 'json-key' : 'json-string';
-            else if (/true|false/.test(match)) cls = 'json-boolean';
-            else if (/null/.test(match)) cls = 'json-null';
+            if (/^"/.test(match)) {cls = /:$/.test(match) ? 'json-key' : 'json-string';}
+            else if (/true|false/.test(match)) {cls = 'json-boolean';}
+            else if (/null/.test(match)) {cls = 'json-null';}
             return `<span class="${cls}">${match}</span>`;
         }
     );

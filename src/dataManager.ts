@@ -17,6 +17,7 @@ export interface RequestData {
     duration?: number;
     retryCount?: number;
     timeout?: number;
+    sslVerify?: boolean;
 }
 
 export interface Collection {
@@ -44,9 +45,9 @@ export class DataManager {
         });
 
         // Fallback for older states that might be missing these
-        if (!this.state.favorites) this.state.favorites = [];
-        if (!this.state.history) this.state.history = [];
-        if (!this.state.collections) this.state.collections = { 'Templates': [] };
+        if (!this.state.favorites) {this.state.favorites = [];}
+        if (!this.state.history) {this.state.history = [];}
+        if (!this.state.collections) {this.state.collections = { 'Templates': [] };}
     }
 
     // --- History ---

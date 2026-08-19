@@ -33,6 +33,7 @@
         <button id="import-curl" class="tool-btn" title="Import cURL">📥 Import</button>
         <button id="export-curl" class="tool-btn" title="Export as cURL">📤 Export</button>
         <div style="flex:1"></div>
+        <span id="ssl-badge" class="badge ssl-badge" style="display:none;" title="SSL certificate verification is disabled for this session">⚠️ SSL Ignored</span>
         <span id="env-badge" class="badge env-badge">No Environment</span>
     </div>
 
@@ -66,11 +67,12 @@
         <!-- Auth -->
         <div id="auth-tab" class="tab-content">
             <div class="auth-type-row">
-                <select id="auth-type" class="method-select" style="width:180px;">
+                <select id="auth-type" class="method-select" style="width:230px;">
                     <option value="none">No Auth</option>
                     <option value="basic">Basic Auth</option>
                     <option value="bearer">Bearer Token</option>
                     <option value="apikey">API Key</option>
+                    <option value="oauth2">OAuth 2.0 (Client Credentials)</option>
                 </select>
             </div>
             <div id="auth-fields" class="auth-fields-wrap"></div>
@@ -100,6 +102,13 @@
                     <input type="number" id="timeout" class="url-input setting-input" min="1000" max="300000"
                         value="10000" autocomplete="off">
                 </div>
+                <div class="setting-row">
+                    <label for="ssl-verify">SSL Verification</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="ssl-verify" checked style="cursor:pointer;">
+                        <span class="fg-muted" style="font-size:11px;">Verify SSL/TLS certificates (uncheck for localhost / self-signed certs)</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -113,13 +122,26 @@
                 <span id="time-badge" class="fg-muted">-- ms</span>
                 <span id="size-badge" class="fg-muted">-- KB</span>
             </div>
+            <div class="response-tabs">
+                <button class="res-tab-btn active" data-res-tab="body">Body</button>
+                <button class="res-tab-btn" data-res-tab="headers">Headers <span id="res-headers-count" class="tab-count"></span></button>
+            </div>
             <div class="response-actions">
-                <button id="copy-response" class="tool-btn" style="padding:2px 8px;">Copy</button>
+                <button id="copy-response" class="tool-btn" style="padding:2px 8px;" title="Copy response content">Copy</button>
             </div>
         </div>
-        <div id="response-body" class="response-body">
-            <div class="fg-muted" style="text-align:center;margin-top:20px;">
-                Send a request to see the response
+        <div id="response-body-tab" class="response-tab-content active">
+            <div id="response-body" class="response-body">
+                <div class="fg-muted" style="text-align:center;margin-top:20px;">
+                    Send a request to see the response
+                </div>
+            </div>
+        </div>
+        <div id="response-headers-tab" class="response-tab-content">
+            <div id="response-headers-list" class="response-headers-list">
+                <div class="fg-muted" style="text-align:center;margin-top:20px;">
+                    No response headers received yet
+                </div>
             </div>
         </div>
     </div>

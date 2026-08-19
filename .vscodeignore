@@ -25,6 +25,10 @@ out/environmentManager.js
 out/utils/**
 roadmap*.md
 .github/**
+articles/**
+test-server.js
+test-https-server.js
+test-certs/**
 
 !out/extension.js
 !package.json

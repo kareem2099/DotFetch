@@ -21,7 +21,7 @@ This roadmap outlines the planned feature progression for DotFetch from v2.0.0 t
 
 ---
 
-## 🔐 v2.1.0 — Authentication Upgrade
+## ✅ v2.1.0 — Authentication Upgrade *(Current)*
 
 *Focus: cover the auth flows developers actually use day-to-day.*
 

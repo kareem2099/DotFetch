@@ -68,5 +68,5 @@ export function executeCurlImport() {
 
     post({ type: 'importCurl', curl: curlText });
     hideModals();
-    if (input) input.value = '';
+    if (input) {input.value = '';}
 }

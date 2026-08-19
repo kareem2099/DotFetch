@@ -4,6 +4,61 @@ All notable changes to the "dotfetch" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [2.1.0] - 2026-08-19
+
+### 🔐 Authentication & Security Upgrade
+
+#### ✨ New Features & Capabilities
+- **API Key Authentication**:
+  - Full support for API Key authentication with customizable key name, value, and transmission target (`Header` vs `Query Parameter`).
+  - Real-time live preview of generated header or query parameter string with quick copy-to-clipboard button.
+- **OAuth 2.0 (Client Credentials Flow)**:
+  - Direct machine-to-machine authentication support within VS Code.
+  - Dedicated UI for `Token URL`, `Client ID`, `Client Secret`, and `Scope`.
+  - **"⚡ Fetch & Inject Token"** action to retrieve access tokens from OAuth providers directly via the Extension Host.
+  - RFC 6749 §2.3.1 compliant client credentials URL-encoding.
+  - Active token card displaying validity/expiry state, copy action, and token revocation.
+  - Automatic validation preventing execution with expired OAuth tokens.
+- **SSL / TLS Certificate Verification Toggle**:
+  - Added setting (`dotfetch.sslVerify`) and UI toggle to disable certificate checks (`rejectUnauthorized: false`) for local development (`https://localhost`) and self-signed certificates.
+  - Visual toolbar warning badge (`⚠️ SSL Ignored`) when SSL verification is disabled.
+  - Secure default (`sslVerify: true`) enforced on every request load.
+- **Interactive Password & Secret Visibility (Eye Toggles)**:
+  - Show/Hide buttons (👁️ / 🙈) for Basic Auth passwords, Bearer tokens, API Key values, and OAuth Client Secrets.
+- **Response Headers Inspector**:
+  - Response pane split into **Body** and **Headers** tabs.
+  - Structured key-value table displaying all HTTP response headers with one-click copy.
+- **Full Environment Variable Support in Auth**:
+  - Seamless interpolation of `{{VARIABLE}}` placeholders inside all auth inputs (Token URLs, Client IDs, Secrets, API Keys, Tokens).
+  - Basic Auth variable resolution executed server-side prior to Base64 encoding.
+
+#### 🛡️ Architecture & Security Hardening
+- **Draft vs. Wire Header Separation**: `getRequestData({ forSend })` separates clean manual user headers from injected runtime authorization headers, preventing auth token contamination when saving to collections.
+- **End-to-End Credential Sanitization**: Collections, Favorites, and Request History strictly store configuration schema (`username`, `keyName`, `keyIn`, `tokenUrl`, `clientId`, `scope`) while omitting sensitive plaintext secrets and ephemeral session tokens from `globalState`.
+- **Pre-Flight Input Validation**: Immediate user notifications preventing 401s and invalid requests when Bearer tokens, API Keys, or OAuth tokens are missing or expired.
+- **Strict Auth Priority**: Active Auth tabs unconditionally override and strip conflicting manual `Authorization` headers.
+- **Response Size Guard**: 10 MB payload limits (`maxContentLength` & `maxBodyLength`) with truncated preview for responses exceeding 1 MB to ensure VS Code UI responsiveness.
+- **Canonical State Factory**: Centralized `createDefaultAuthConfig()` and `createPersistableAuthConfig()` helpers ensuring consistent state initialization, complete field resets, and secure persistence.
+
+#### ✅ Runtime Verification
+v2.1.0 was manually verified through a full runtime test matrix covering:
+- GET / POST requests, query parameters, headers, and JSON bodies
+- Basic Auth and environment-variable credential resolution
+- Bearer Token validation and Auth-tab precedence
+- API Key authentication in Header and Query modes
+- OAuth 2.0 Client Credentials, token injection, clearing, and expiration
+- Request timeout, cancellation, retry, and exponential backoff
+- Network error propagation
+- Large-response preview truncation and 10 MB hard response limits
+- Collection, Favorite, and History credential sanitization
+- SSL/TLS verification with self-signed certificates
+- Secure SSL defaults and explicit verification bypass
+
+Final quality gates:
+- `npm run compile` ✅
+- `npm run typecheck` ✅
+- `npm run lint` ✅
+
 ## [2.0.0] - 2026-04-19
 
 ### 🚀 Package Updates

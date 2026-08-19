@@ -83,6 +83,9 @@ export class DotFetchPanel {
                     case 'sendRequest':
                         await this.handleSendRequest(message);
                         break;
+                    case 'fetchOAuthToken':
+                        await this.requestService.fetchOAuthToken(message, this.panel.webview);
+                        break;
                     case 'getCollections': {
                         const collections = this.dataManager.getCollections();
                         const colArray = Object.keys(collections).map(name => ({ id: name, name: name }));
@@ -102,6 +105,7 @@ export class DotFetchPanel {
                             auth: message.request?.auth,
                             retryCount: message.request?.retryCount,
                             timeout: message.request?.timeout,
+                            sslVerify: message.request?.sslVerify,
                             createdAt: message.request?.createdAt || new Date().toISOString(),
                         };
                         await this.dataManager.saveToCollection(message.collectionId, requestData);
@@ -170,20 +174,22 @@ export class DotFetchPanel {
 
         await this.requestService.execute(message, proxyWebview);
 
-        // Save to history on success
+        // Save sanitized snapshot to history on success (no plaintext secrets or injected auth headers)
         if (capturedResponse) {
+            const safeRequest = message.historyData || {};
             const historyEntry: RequestData = {
                 id: Date.now().toString(),
-                name: message.url || 'Request',
-                method: message.method || 'GET',
-                url: message.url || '',
-                headers: message.headers || '',
-                body: message.body || '',
-                notes: message.notes,
-                queryParams: message.queryParams,
-                auth: message.auth,
-                retryCount: message.retryCount,
-                timeout: message.timeout,
+                name: safeRequest.name || message.url || 'Request',
+                method: safeRequest.method || message.method || 'GET',
+                url: safeRequest.url || message.url || '',
+                headers: safeRequest.headers || '',
+                body: safeRequest.body || '',
+                notes: safeRequest.notes,
+                queryParams: safeRequest.queryParams,
+                auth: safeRequest.auth,
+                retryCount: safeRequest.retryCount,
+                timeout: safeRequest.timeout,
+                sslVerify: safeRequest.sslVerify,
                 status: capturedResponse.status,
                 duration: capturedResponse.duration,
                 createdAt: new Date().toISOString(),

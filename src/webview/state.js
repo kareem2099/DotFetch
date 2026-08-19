@@ -1,3 +1,36 @@
+export function createDefaultAuthConfig() {
+    return {
+        type: 'none',
+        username: '',
+        password: '',
+        token: '',
+        keyName: '',
+        keyValue: '',
+        keyIn: 'header',
+        tokenUrl: '',
+        clientId: '',
+        clientSecret: '',
+        scope: '',
+        accessToken: '',
+        tokenType: 'Bearer',
+        expiresIn: null,
+        tokenReceivedAt: null
+    };
+}
+
+export function createPersistableAuthConfig(authConfig = state.authConfig) {
+    return {
+        ...authConfig,
+        password: '',
+        token: '',
+        keyValue: '',
+        clientSecret: '',
+        accessToken: '',
+        expiresIn: null,
+        tokenReceivedAt: null
+    };
+}
+
 export const state = {
     queryParams: [],
     headers: [],          // key-value pairs, mirrors queryParams pattern
@@ -7,6 +40,7 @@ export const state = {
     currentRequest: null,
     settings: {
         timeout: 10000,
+        sslVerify: true,
         shortcuts: {
             sendRequest: 'ctrl+enter',
             saveRequest: 'ctrl+s',
@@ -15,7 +49,9 @@ export const state = {
         }
     },
     environments: [],
+    activeEnvironment: 'none',
     isRequestInProgress: false,
-    authConfig: { type: 'none', username: '', password: '', token: '', keyName: '', keyValue: '', keyIn: 'header' },
+    authConfig: createDefaultAuthConfig(),
+    lastResponseHeaders: {},
     lastLoadedCollection: null
 };

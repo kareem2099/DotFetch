@@ -2,7 +2,7 @@
   "name": "dotfetch",
   "displayName": "DotFetch",
   "description": "A professional HTTP client extension for VS Code with environment variables, collections, and cURL support",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "publisher": "FreeRave",
   "license": "Apache-2.0",
   "repository": {
@@ -234,6 +234,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show variable substitution preview in the editor."
+        },
+        "dotfetch.sslVerify": {
+          "type": "boolean",
+          "default": true,
+          "description": "Verify SSL/TLS certificates for HTTP requests."
         }
       }
     }
