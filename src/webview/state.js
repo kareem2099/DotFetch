@@ -53,5 +53,7 @@ export const state = {
     isRequestInProgress: false,
     authConfig: createDefaultAuthConfig(),
     lastResponseHeaders: {},
+    lastResponseRawData: null,
+    responseViewMode: 'pretty',
     lastLoadedCollection: null
 };

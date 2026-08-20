@@ -6,11 +6,11 @@
 
 *Modern API Testing Made Simple*
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://marketplace.visualstudio.com/items?itemName=FreeRave.dotfetch)
+[![Version](https://img.shields.io/badge/version-2.1.1-blue.svg)](https://marketplace.visualstudio.com/items?itemName=FreeRave.dotfetch)
 [![VS Code](https://img.shields.io/badge/VS_Code-1.80+-blue.svg)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 
-[📥 Install from Marketplace](https://marketplace.visualstudio.com/items?itemName=FreeRave.dotfetch) • [📖 Documentation](https://github.com/kareem2099/DotFetch) • [🐛 Report Issues](https://github.com/kareem2099/DotFetch/issues)
+[📥 Marketplace](https://marketplace.visualstudio.com/items?itemName=FreeRave.dotfetch) • [🌐 Open VSX](https://open-vsx.org/extension/freerave/dotfetch) • [📖 Documentation](https://github.com/kareem2099/DotFetch) • [🐛 Report Issues](https://github.com/kareem2099/DotFetch/issues)
 
 ---
 
@@ -28,7 +28,7 @@ DotFetch is a **powerful, modern HTTP client** built specifically for VS Code. D
 - **Professional UI** - Dark theme optimized interface matching VS Code aesthetics with Response Body and Headers inspector tabs
 - **Performance & Memory Protected** - 10MB payload size limits and large response truncation guards
 
-> **v2.1.0 Runtime Verified**: DotFetch v2.1.0 has been runtime-verified across authentication, networking, persistence-security, response-limit, and SSL/TLS scenarios.
+> **v2.1.1 Runtime Verified**: DotFetch v2.1.1 keeps the hardened v2.1 request engine and adds a fully runtime-verified UI/UX polish pass across the Request Builder, Response Viewer, Sidebar, Auth/Environment presentation, keyboard workflow, and toast/micro-interaction system.
 
 ---
 
@@ -54,7 +54,7 @@ DotFetch is a **powerful, modern HTTP client** built specifically for VS Code. D
 1. **Open DotFetch:** `Ctrl+Shift+P` → "DotFetch: Open HTTP Client"
 2. **Enter URL:** `https://jsonplaceholder.typicode.com/posts/1`
 3. **Select Method:** Choose from GET, POST, PUT, DELETE, etc.
-4. **Send Request:** Click the Send button or press `Enter`
+4. **Send Request:** Click the Send button or press `Ctrl+Enter` / `Cmd+Enter`
 
 ---
 
@@ -166,11 +166,30 @@ DotFetch is a **powerful, modern HTTP client** built specifically for VS Code. D
 ### 🎨 Professional UI/UX
 
 - ✅ **Native Dark Theme** - Automatically syncs with VS Code's active theme
-- ✅ **Customizable Shortcuts** - Record your own keybinds for common actions
+- ✅ **Native VS Code Keyboard Workflow** - `Ctrl+Enter` Send, `Alt+D` Focus URL, `Ctrl+Alt+S` Save, `Ctrl+Shift+Backspace` Clear, `?` Help
 - ✅ **Method Color Coding** - Visual HTTP method distinction
 - ✅ **Responsive Design** - Works on all screen sizes
 - ✅ **Loading States** - Visual feedback for all operations
 - ✅ **Context Menus & Modals** - Professional fluid interactions
+- ✅ **Pretty / Raw Response Views** - Fast switching between formatted and raw payloads
+- ✅ **Smart Request Indicators** - Active counts/dots for Params, Headers, Auth, Body, and Notes
+- ✅ **Non-Destructive Row Toggles** - Disable Params or Headers without deleting their values
+- ✅ **Inline Copy Feedback** - Green `✓ Copied` state only after successful clipboard writes
+- ✅ **Environment Guidance** - Missing-environment variable warning plus responsive active-environment tooltip
+- ✅ **Toast System** - Stacked in-WebView feedback with a maximum of three visible notifications
+
+---
+
+### ⌨️ Keyboard Workflow
+
+- `Ctrl+Enter` / `Cmd+Enter` — Send Active Request
+- `Alt+D` — Focus and select the URL field
+- `Ctrl+Alt+S` / `Cmd+Alt+S` — Save Request to Collection
+- `Ctrl+Shift+Backspace` / `Cmd+Shift+Backspace` — Clear Request Form
+- `?` — Toggle Keyboard Shortcuts Help
+- `Escape` — Close Active Modal
+
+Host-level shortcuts are registered through native VS Code keybindings and are scoped to the active DotFetch Request Builder, preventing actions from firing while another editor or panel is active.
 
 ---
 

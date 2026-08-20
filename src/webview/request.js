@@ -1,6 +1,10 @@
 import { state, createDefaultAuthConfig, createPersistableAuthConfig } from './state.js';
 import { post, notify } from './api.js';
-import { constructFullUrl, renderQueryParams, renderHeaders, serializeHeaders, parseHeadersIntoState, hideModals, updateSslIndicator } from './ui.js';
+import {
+    constructFullUrl, renderQueryParams, renderHeaders, serializeHeaders,
+    parseHeadersIntoState, hideModals, updateSslIndicator, updateMethodColor,
+    updateTabDots, renderResponseBody, renderResponseHeaders
+} from './ui.js';
 import { restoreAuthUI, renderAuthFields, applyAuthHeaderToRawHeaders, isOAuthTokenExpired } from './auth.js';
 
 export function getRequestData({ forSend = false } = {}) {
@@ -19,9 +23,10 @@ export function getRequestData({ forSend = false } = {}) {
         method: document.getElementById('method')?.value || 'GET',
         url: constructFullUrl(),
         headers,
+        headerRows: state.headers.map(h => ({ key: h.key || '', value: h.value || '', enabled: h.enabled !== false })),
         body: document.getElementById('body')?.value || '',
         notes: document.getElementById('notes')?.value || '',
-        queryParams: [...state.queryParams],
+        queryParams: state.queryParams.map(p => ({ key: p.key || '', value: p.value || '', enabled: p.enabled !== false })),
         auth,
         environment: activeEnv,
         retryCount: parseInt(document.getElementById('retry-count')?.value || '0', 10),
@@ -37,7 +42,7 @@ export function sendRequest() {
         post({ type: 'cancelRequest' });
         if (sendButton) {
             sendButton.textContent = 'Send';
-            sendButton.classList.remove('loading');
+            sendButton.classList.remove('loading', 'retry-mode');
         }
         state.isRequestInProgress = false;
         return;
@@ -82,8 +87,9 @@ export function sendRequest() {
     state.isRequestInProgress = true;
 
     if (sendButton) {
-        sendButton.textContent = 'Cancel ✕';
+        sendButton.innerHTML = '<span class="btn-spinner"></span> Cancel ✕';
         sendButton.classList.add('loading');
+        sendButton.classList.remove('retry-mode');
     }
 
     post({
@@ -94,6 +100,11 @@ export function sendRequest() {
 }
 
 export function clearRequestForm() {
+    state.currentRequest = null;
+    state.lastLoadedCollection = null;
+    state.lastResponseRawData = null;
+    state.lastResponseHeaders = {};
+
     const methodSelect = document.getElementById('method');
     const urlInput = document.getElementById('url');
     const bodyTextarea = document.getElementById('body');
@@ -109,6 +120,22 @@ export function clearRequestForm() {
     renderQueryParams();
     renderHeaders();
 
+    // Reset response view
+    state.responseViewMode = 'pretty';
+    const prettyBtn = document.getElementById('res-view-pretty');
+    const rawBtn = document.getElementById('res-view-raw');
+    if (prettyBtn) { prettyBtn.classList.add('active'); }
+    if (rawBtn) { rawBtn.classList.remove('active'); }
+
+    renderResponseBody(null);
+    renderResponseHeaders({});
+    const statusBadge = document.getElementById('status-badge');
+    if (statusBadge) { statusBadge.textContent = '---'; statusBadge.className = 'badge'; }
+    const timeBadge = document.getElementById('time-badge');
+    if (timeBadge) { timeBadge.textContent = '-- ms'; }
+    const sizeBadge = document.getElementById('size-badge');
+    if (sizeBadge) { sizeBadge.textContent = '-- KB'; }
+
     // Canonical v2.1 authConfig reset
     state.authConfig = createDefaultAuthConfig();
     const authTypeSelect = document.getElementById('auth-type');
@@ -116,6 +143,8 @@ export function clearRequestForm() {
         authTypeSelect.value = 'none';
     }
     renderAuthFields('none');
+    updateMethodColor('GET');
+    updateTabDots();
 }
 
 export function loadRequestIntoForm(item, collectionName) {
@@ -129,23 +158,38 @@ export function loadRequestIntoForm(item, collectionName) {
     const bodyTextarea = document.getElementById('body');
     const notesTextarea = document.getElementById('notes');
 
-    if (methodSelect) { methodSelect.value = item.method || 'GET'; }
+    const method = item.method || 'GET';
+    if (methodSelect) { methodSelect.value = method; }
     if (urlInput) { urlInput.value = (item.url || '').split('?')[0]; }
     if (bodyTextarea) { bodyTextarea.value = item.body || ''; }
     if (notesTextarea) { notesTextarea.value = item.notes || ''; }
 
-    // Parse headers string into key-value state
-    parseHeadersIntoState(item.headers || '');
+    updateMethodColor(method);
+
+    // Parse headers (from structured headerRows if available, else parse raw headers)
+    if (Array.isArray(item.headerRows) && item.headerRows.length > 0) {
+        state.headers = item.headerRows.map(h => ({
+            key: h.key || '',
+            value: h.value || '',
+            enabled: h.enabled !== false
+        }));
+    } else {
+        parseHeadersIntoState(item.headers || '');
+    }
     renderHeaders();
 
     // Parse query params
-    if (item.queryParams && item.queryParams.length > 0) {
-        state.queryParams = item.queryParams.map(p => ({ ...p }));
+    if (Array.isArray(item.queryParams) && item.queryParams.length > 0) {
+        state.queryParams = item.queryParams.map(p => ({
+            key: p.key || '',
+            value: p.value || '',
+            enabled: p.enabled !== false
+        }));
     } else {
         try {
             const urlObj = new URL(item.url || '');
             state.queryParams = [];
-            urlObj.searchParams.forEach((value, key) => state.queryParams.push({ key, value }));
+            urlObj.searchParams.forEach((value, key) => state.queryParams.push({ key, value, enabled: true }));
             if (urlInput) { urlInput.value = urlObj.origin + urlObj.pathname; }
         } catch {
             state.queryParams = [];
@@ -172,6 +216,7 @@ export function loadRequestIntoForm(item, collectionName) {
 
     // Restore Auth or reset cleanly to default schema
     restoreAuthUI(item.auth || createDefaultAuthConfig());
+    updateTabDots();
 
     notify('info', `Loaded: ${item.name || 'Request'}`);
 }

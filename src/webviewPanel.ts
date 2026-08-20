@@ -99,6 +99,7 @@ export class DotFetchPanel {
                             method: message.request?.method || 'GET',
                             url: message.request?.url || '',
                             headers: message.request?.headers || '',
+                            headerRows: message.request?.headerRows,
                             body: message.request?.body || '',
                             notes: message.request?.notes,
                             queryParams: message.request?.queryParams,
@@ -136,6 +137,11 @@ export class DotFetchPanel {
                     }
                     case 'cancelRequest':
                         this.requestService.cancelRequest();
+                        break;
+                    case 'copyToClipboard':
+                        if (typeof message.text === 'string') {
+                            await vscode.env.clipboard.writeText(message.text);
+                        }
                         break;
                     case 'notify':
                         if (message.level === 'error') {
@@ -183,6 +189,7 @@ export class DotFetchPanel {
                 method: safeRequest.method || message.method || 'GET',
                 url: safeRequest.url || message.url || '',
                 headers: safeRequest.headers || '',
+                headerRows: safeRequest.headerRows,
                 body: safeRequest.body || '',
                 notes: safeRequest.notes,
                 queryParams: safeRequest.queryParams,
@@ -205,6 +212,10 @@ export class DotFetchPanel {
             environments: this.environmentManager.getEnvironments(),
             activeEnvironment: this.environmentManager.getActiveEnvironment()
         });
+    }
+
+    public postMessage(message: any) {
+        this.panel.webview.postMessage(message);
     }
 
     private handleWebviewReady() {

@@ -156,6 +156,52 @@ export function activate(context: vscode.ExtensionContext) {
 			if (item.request) {
 				vscode.commands.executeCommand('dotfetch.openRequestBuilder', item.request, item.collectionName);
 			}
+		}),
+
+		vscode.commands.registerCommand('dotfetch.newRequest', () => {
+			vscode.commands.executeCommand('dotfetch.openRequestBuilder');
+		}),
+
+		vscode.commands.registerCommand('dotfetch.duplicateRequest', async (item: CollectionTreeItem) => {
+			if (!item.collectionName || !item.request) { return; }
+			await dataManager.duplicateRequest(item.collectionName, item.request.id);
+			collectionProvider.refresh();
+			vscode.window.showInformationMessage(`Duplicated "${item.request.name}"`);
+		}),
+
+		vscode.commands.registerCommand('dotfetch.focusUrl', () => {
+			DotFetchPanel.currentPanel?.postMessage({ type: 'focusUrl' });
+		}),
+
+		vscode.commands.registerCommand('dotfetch.sendRequest', () => {
+			DotFetchPanel.currentPanel?.postMessage({ type: 'triggerSend' });
+		}),
+
+		vscode.commands.registerCommand('dotfetch.clearForm', () => {
+			DotFetchPanel.currentPanel?.postMessage({ type: 'triggerClear' });
+		}),
+
+		vscode.commands.registerCommand('dotfetch.saveRequest', () => {
+			DotFetchPanel.currentPanel?.postMessage({ type: 'triggerSave' });
+		}),
+
+		vscode.commands.registerCommand('dotfetch.selectEnvironment', async () => {
+			const envs = environmentManager.getEnvironments();
+			const current = environmentManager.getActiveEnvironment();
+			const items = [
+				{ label: '$(circle-slash) No Environment', description: current === 'none' ? '(Active)' : '', envName: 'none' },
+				...envs.map(e => ({
+					label: `$(symbol-variable) ${e.name}`,
+					description: e.name === current ? '(Active)' : '',
+					envName: e.name
+				}))
+			];
+			const selected = await vscode.window.showQuickPick(items, { placeHolder: 'Select active environment for DotFetch' });
+			if (selected) {
+				await environmentManager.setActiveEnvironment(selected.envName);
+				environmentTreeProvider.refresh();
+				DotFetchPanel.currentPanel?.updateEnvironments();
+			}
 		})
 	);
 

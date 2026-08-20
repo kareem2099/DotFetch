@@ -51,10 +51,18 @@ body {
     border: 1px solid var(--border);
     border-radius: var(--radius);
     color: var(--fg);
-    font-weight: 600;
+    font-weight: 700;
     font-size: 12px;
     cursor: pointer;
+    transition: var(--transition);
 }
+
+.method-select.method-GET { color: #3fb950; border-color: rgba(63, 185, 80, 0.4); }
+.method-select.method-POST { color: #58a6ff; border-color: rgba(88, 166, 255, 0.4); }
+.method-select.method-PUT { color: #d29922; border-color: rgba(210, 153, 34, 0.4); }
+.method-select.method-PATCH { color: #e3b341; border-color: rgba(227, 179, 65, 0.4); }
+.method-select.method-DELETE { color: #f85149; border-color: rgba(248, 81, 73, 0.4); }
+.method-select.method-HEAD, .method-select.method-OPTIONS { color: #8b949e; border-color: rgba(139, 148, 158, 0.4); }
 
 .url-input {
     flex: 1;
@@ -99,14 +107,29 @@ body {
 }
 
 .send-btn.loading {
-    background: var(--warning);
-    animation: pulse 2s infinite;
+    background: rgba(248, 81, 73, 0.85);
 }
 
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
+.send-btn.loading:hover {
+    background: var(--error);
+}
+
+.send-btn.retry-mode {
+    background: rgba(210, 153, 34, 0.85);
+}
+
+.btn-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 /* ── Toolbar ── */
@@ -148,11 +171,54 @@ body {
 .env-badge {
     background: rgba(56, 139, 253, 0.15);
     color: #58a6ff;
+    position: relative;
+}
+
+/* ── Custom Environment Tooltip ── */
+.env-badge[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: max-content;
+    max-width: min(320px, calc(100vw - 24px));
+    padding: 6px 9px;
+    border-radius: 5px;
+    background: var(--vscode-editorHoverWidget-background, #252526);
+    border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+    color: var(--vscode-editorHoverWidget-foreground, #cccccc);
+    font-size: 11px;
+    line-height: 1.4;
+    font-weight: 400;
+    white-space: normal;
+    text-align: left;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-2px);
+    pointer-events: none;
+    z-index: 1000;
+    transition:
+        opacity 120ms ease,
+        transform 120ms ease,
+        visibility 120ms ease;
+}
+
+.env-badge[data-tooltip]:hover::after,
+.env-badge[data-tooltip]:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }
 
 .badge-2xx {
     background: rgba(63, 185, 80, 0.15);
     color: var(--success);
+}
+
+.badge-3xx {
+    background: rgba(227, 179, 65, 0.15);
+    color: #e3b341;
 }
 
 .badge-4xx {
@@ -217,6 +283,19 @@ body {
     text-align: center;
 }
 
+.tab-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    display: inline-block;
+    margin-left: 2px;
+}
+
+.tab-dot.hidden {
+    display: none;
+}
+
 .tab-content {
     display: none;
     flex-direction: column;
@@ -247,6 +326,44 @@ body {
     gap: 6px;
     margin-bottom: 6px;
     align-items: center;
+    transition: opacity 0.15s ease;
+}
+
+.kv-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg-input);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.kv-checkbox:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.kv-checkbox:checked::after {
+    content: '✓';
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.kv-row.disabled {
+    opacity: 0.4;
+}
+
+.kv-row.disabled .kv-key {
+    text-decoration: line-through;
+    color: var(--fg-muted);
 }
 
 .kv-row .url-input {
@@ -373,12 +490,78 @@ body {
     padding: 7px 16px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
+    gap: 8px;
 }
 
 .response-meta {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
+}
+
+.response-title {
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--fg);
+    letter-spacing: 0.3px;
+}
+
+.meta-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--fg-muted);
+    font-family: var(--font-mono);
+    font-weight: 500;
+}
+
+.response-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.res-view-toggle {
+    display: flex;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px;
+    gap: 1px;
+}
+
+.view-btn {
+    background: transparent;
+    border: none;
+    color: var(--fg-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.view-btn:hover:not(.active) {
+    color: var(--fg);
+}
+
+.view-btn.active {
+    background: rgba(88, 166, 255, 0.2);
+    color: #58a6ff;
+}
+
+.copy-btn {
+    padding: 2px 10px;
+    font-weight: 500;
+}
+
+.tool-btn.copied,
+.copy-btn.copied {
+    background: rgba(63, 185, 80, 0.2) !important;
+    border-color: rgba(63, 185, 80, 0.5) !important;
+    color: #3fb950 !important;
 }
 
 .response-body {
@@ -389,6 +572,38 @@ body {
     font-size: 12px;
     white-space: pre-wrap;
     background: var(--bg-main);
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 120px;
+    text-align: center;
+    color: var(--fg-muted);
+    padding: 20px;
+}
+
+.empty-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+    opacity: 0.8;
+}
+
+.empty-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 4px;
+}
+
+.empty-desc {
+    font-size: 11px;
+    max-width: 280px;
+    line-height: 1.4;
+    color: var(--fg-muted);
 }
 
 .fg-muted {
@@ -509,6 +724,19 @@ body {
 
 .auth-preview-box.hidden {
     display: none;
+}
+
+.auth-warning-hint {
+    margin-top: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    background: rgba(210, 153, 34, 0.15);
+    border: 1px solid rgba(210, 153, 34, 0.4);
+    color: #e0a820;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 /* ── OAuth 2.0 Client Credentials UI ── */
@@ -655,4 +883,190 @@ body {
 .res-header-val {
     color: var(--fg);
     word-break: break-all;
+}
+
+/* ── Environment Variable Hint Banner ── */
+.env-hint-banner {
+    margin: 4px 16px 8px 16px;
+    padding: 6px 12px;
+    background: rgba(210, 153, 34, 0.12);
+    border: 1px solid rgba(210, 153, 34, 0.35);
+    border-radius: 6px;
+    font-size: 11px;
+    color: #e3b341;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeIn 0.2s ease;
+}
+
+.env-hint-banner code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: #fff;
+}
+
+.env-hint-banner.hidden {
+    display: none;
+}
+
+/* ── Masked Auth Preview ── */
+.auth-mask {
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+}
+
+/* ── Keyboard Shortcuts Modal ── */
+.shortcuts-modal-box {
+    width: 440px;
+    max-width: 90vw;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.shortcuts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.shortcuts-table td {
+    padding: 8px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.shortcuts-table td:first-child {
+    width: 45%;
+    white-space: nowrap;
+}
+
+.shortcuts-table kbd {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ── In-Webview Toast Notifications ── */
+.toast-container {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 999;
+    pointer-events: none;
+}
+
+.toast {
+    pointer-events: auto;
+    min-width: 240px;
+    max-width: 360px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-info {
+    background: rgba(22, 27, 34, 0.95);
+    color: #58a6ff;
+    border-left: 3px solid #58a6ff;
+}
+
+.toast-success {
+    background: rgba(22, 27, 34, 0.95);
+    color: #3fb950;
+    border-left: 3px solid #3fb950;
+}
+
+.toast-warning {
+    background: rgba(22, 27, 34, 0.95);
+    color: #e3b341;
+    border-left: 3px solid #e3b341;
+}
+
+.toast-error {
+    background: rgba(22, 27, 34, 0.95);
+    color: #f85149;
+    border-left: 3px solid #f85149;
+}
+
+.toast-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.toast-message {
+    flex: 1;
+    color: var(--fg);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.toast-close {
+    background: transparent;
+    border: none;
+    color: var(--fg-muted);
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 11px;
+    border-radius: 3px;
+    transition: var(--transition);
+}
+
+.toast-close:hover {
+    color: var(--fg);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.toast-fade-out {
+    opacity: 0;
+    transform: translateX(30px);
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ── Micro-Interactions & Hover Polish ── */
+.add-row-btn {
+    transition: var(--transition);
+}
+
+.add-row-btn:hover {
+    transform: translateY(-1px);
+}
+
+.url-input:focus {
+    box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.25);
 }

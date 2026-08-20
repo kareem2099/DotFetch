@@ -4,6 +4,85 @@ All notable changes to the "dotfetch" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [2.1.1] - 2026-08-20
+
+### ✨ UI/UX Polish & Workflow Refinement
+
+#### 🎯 Request Builder Ergonomics
+
+- Added dynamic HTTP method color coding for GET, POST, PUT, PATCH, DELETE, HEAD, and OPTIONS.
+- Added enable/disable checkboxes for Query Params and Headers without deleting row values.
+- Disabled Params and Headers are excluded from live requests and cURL export while their state is preserved when requests are saved and reloaded.
+- Added smart tab indicators for active Params, Headers, Auth, Body, and Notes.
+- Improved Send / Cancel / Retry button states with spinner feedback and retry-attempt status.
+
+#### 🔎 Response Viewer & Inspector
+
+- Added **Pretty / Raw** response switching for faster JSON inspection.
+- Improved response metadata hierarchy for status, response time, payload size, and response-header count.
+- Added polished empty states for response body and response headers.
+- Unified all copy actions around an inline green **✓ Copied** state.
+- Copy success is now shown only after the clipboard write actually succeeds; clipboard failures produce an explicit error instead of a false success state.
+
+#### 📁 Sidebar & Request Management
+
+- Improved History labels to show readable request paths with status and duration metadata.
+- Added **Duplicate Request** support directly from Collection actions.
+- Added dedicated VS Code commands for New Request, Duplicate Request, Focus URL, Send Active Request, Clear Request Form, and Select Environment.
+- Preserved structured Header and Query Parameter row state when saving and reloading requests.
+
+#### 🔐 Authentication & Environment Presentation
+
+- Added masked live previews for Bearer Token, API Key, Basic Auth, and OAuth authorization values.
+- Added human-readable OAuth token expiry such as `59m 59s` instead of raw expiration metadata.
+- Added an API Key helper warning when the header name is accidentally repeated inside the key value.
+- Added a non-intrusive warning banner when `{{VARIABLE}}` placeholders are used while **No Environment** is selected.
+- Added a custom Environment tooltip that remains inside the WebView and reports the active environment and variable count without overflow or clipping.
+
+#### ⌨️ Keyboard-First Workflow
+
+- Moved host-level shortcuts to native VS Code keybindings to avoid WebView / IDE shortcut conflicts.
+- Final default workflow:
+  - `Ctrl+Enter` / `Cmd+Enter` — Send Active Request
+  - `Alt+D` — Focus URL Bar
+  - `Ctrl+Alt+S` / `Cmd+Alt+S` — Save Request
+  - `Ctrl+Shift+Backspace` / `Cmd+Shift+Backspace` — Clear Request Form
+  - `?` — Toggle Keyboard Shortcuts Help
+  - `Escape` — Close Active Modal
+- Added active-WebView context isolation so DotFetch host shortcuts do not fire while another editor or panel is active.
+- Updated the Keyboard Shortcuts help modal to match the final runtime keybindings.
+
+#### ✨ Micro-Interactions & Toast System
+
+- Added an in-WebView toast system with separate info/success, warning, and error durations.
+- Toasts stack cleanly with a maximum of three visible notifications.
+- Added URL focus glow and lightweight Add Parameter / Add Header interaction feedback.
+- Kept copy feedback local to the button to avoid unnecessary notification noise.
+
+#### 🐛 Polish Fixes
+
+- Fixed disabled Header / Query Parameter rows losing their enabled state after save/load.
+- Fixed Environment tooltip overflow at the right edge of the Request Builder.
+- Removed unreliable `Ctrl+L` and `Ctrl+S` WebView interception in favor of native VS Code command routing.
+- Fixed stale shortcut documentation after the keybinding architecture change.
+- Reset response metadata and view state cleanly when starting a new request.
+
+#### ✅ Runtime Verification
+
+The v2.1.1 polish pass was manually runtime-verified across all six polish phases:
+
+- P1 — Request Builder & Row Ergonomics ✅
+- P2 — Response Viewer & Inspector ✅
+- P3 — Sidebar Ergonomics & Commands ✅
+- P4 — Auth & Environment Presentation ✅
+- P5 — Keyboard-First Workflow ✅
+- P6 — Micro-Interactions & Toast System ✅
+
+Final quality gates:
+- `npm run compile` ✅
+- `npm run typecheck` ✅
+- `npm run lint` ✅
+
 ## [2.1.0] - 2026-08-19
 
 ### 🔐 Authentication & Security Upgrade

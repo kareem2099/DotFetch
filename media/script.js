@@ -1,10 +1,5 @@
 "use strict";
 (() => {
-  var __getOwnPropNames = Object.getOwnPropertyNames;
-  var __esm = (fn, res) => function __init() {
-    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
-  };
-
   // src/webview/state.js
   function createDefaultAuthConfig() {
     return {
@@ -37,55 +32,33 @@
       tokenReceivedAt: null
     };
   }
-  var state;
-  var init_state = __esm({
-    "src/webview/state.js"() {
-      "use strict";
-      state = {
-        queryParams: [],
-        headers: [],
-        // key-value pairs, mirrors queryParams pattern
-        history: [],
-        collections: {},
-        expandedCollections: /* @__PURE__ */ new Set(),
-        currentRequest: null,
-        settings: {
-          timeout: 1e4,
-          sslVerify: true,
-          shortcuts: {
-            sendRequest: "ctrl+enter",
-            saveRequest: "ctrl+s",
-            clearForm: "ctrl+k",
-            closeModal: "escape"
-          }
-        },
-        environments: [],
-        activeEnvironment: "none",
-        isRequestInProgress: false,
-        authConfig: createDefaultAuthConfig(),
-        lastResponseHeaders: {},
-        lastLoadedCollection: null
-      };
-    }
-  });
-
-  // src/webview/api.js
-  function initApi(vscode) {
-    _vscode = vscode;
-  }
-  function post(message) {
-    _vscode.postMessage(message);
-  }
-  function notify(level, text) {
-    _vscode.postMessage({ type: "notify", level, text });
-  }
-  var _vscode;
-  var init_api = __esm({
-    "src/webview/api.js"() {
-      "use strict";
-      _vscode = null;
-    }
-  });
+  var state = {
+    queryParams: [],
+    headers: [],
+    // key-value pairs, mirrors queryParams pattern
+    history: [],
+    collections: {},
+    expandedCollections: /* @__PURE__ */ new Set(),
+    currentRequest: null,
+    settings: {
+      timeout: 1e4,
+      sslVerify: true,
+      shortcuts: {
+        sendRequest: "ctrl+enter",
+        saveRequest: "ctrl+s",
+        clearForm: "ctrl+k",
+        closeModal: "escape"
+      }
+    },
+    environments: [],
+    activeEnvironment: "none",
+    isRequestInProgress: false,
+    authConfig: createDefaultAuthConfig(),
+    lastResponseHeaders: {},
+    lastResponseRawData: null,
+    responseViewMode: "pretty",
+    lastLoadedCollection: null
+  };
 
   // src/webview/ui.js
   function switchTab(tabName) {
@@ -107,6 +80,18 @@
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
+  }
+  function showCopiedState(button, duration = 1600) {
+    if (!button) {
+      return;
+    }
+    const originalText = button.textContent;
+    button.textContent = "\u2713 Copied";
+    button.classList.add("copied");
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.classList.remove("copied");
+    }, duration);
   }
   function renderQueryParams() {
     const container = document.getElementById("params-list");
@@ -132,12 +117,24 @@
   }
   function _makeKVRow(item, index, stateKey, onUpdate) {
     const row = document.createElement("div");
-    row.className = "kv-row";
+    row.className = "kv-row" + (item.enabled === false ? " disabled" : "");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "kv-checkbox";
+    checkbox.checked = item.enabled !== false;
+    checkbox.title = "Enable or disable row";
+    checkbox.addEventListener("change", (e) => {
+      state[stateKey][index].enabled = e.target.checked;
+      row.classList.toggle("disabled", !e.target.checked);
+      if (onUpdate) {
+        onUpdate();
+      }
+    });
     const keyInput = document.createElement("input");
     keyInput.type = "text";
     keyInput.className = "url-input kv-key";
     keyInput.placeholder = "Key";
-    keyInput.value = escapeHtml(item.key);
+    keyInput.value = item.key || "";
     keyInput.addEventListener("input", (e) => {
       state[stateKey][index].key = e.target.value;
       if (onUpdate) {
@@ -148,7 +145,7 @@
     valInput.type = "text";
     valInput.className = "url-input kv-value";
     valInput.placeholder = "Value";
-    valInput.value = escapeHtml(item.value);
+    valInput.value = item.value || "";
     valInput.addEventListener("input", (e) => {
       state[stateKey][index].value = e.target.value;
       if (onUpdate) {
@@ -163,6 +160,7 @@
       state[stateKey].splice(index, 1);
       stateKey === "headers" ? renderHeaders() : renderQueryParams();
     });
+    row.appendChild(checkbox);
     row.appendChild(keyInput);
     row.appendChild(valInput);
     row.appendChild(removeBtn);
@@ -173,7 +171,7 @@
     if (!el) {
       return;
     }
-    const n = state.queryParams.filter((p) => p.key).length;
+    const n = state.queryParams.filter((p) => p.enabled !== false && p.key && p.key.trim()).length;
     el.textContent = n > 0 ? String(n) : "";
   }
   function updateHeadersCount() {
@@ -181,11 +179,38 @@
     if (!el) {
       return;
     }
-    const n = state.headers.filter((h) => h.key).length;
+    const n = state.headers.filter((h) => h.enabled !== false && h.key && h.key.trim()).length;
     el.textContent = n > 0 ? String(n) : "";
   }
+  function updateMethodColor(method) {
+    const select = document.getElementById("method");
+    if (!select) {
+      return;
+    }
+    const m = (method || select.value || "GET").toUpperCase();
+    select.className = "method-select method-" + m;
+  }
+  function updateTabDots() {
+    const authDot = document.getElementById("auth-dot");
+    if (authDot) {
+      const hasAuth = state.authConfig && state.authConfig.type && state.authConfig.type !== "none";
+      authDot.classList.toggle("hidden", !hasAuth);
+    }
+    const bodyDot = document.getElementById("body-dot");
+    if (bodyDot) {
+      const bodyEl = document.getElementById("body");
+      const hasBody = Boolean(bodyEl && bodyEl.value && bodyEl.value.trim());
+      bodyDot.classList.toggle("hidden", !hasBody);
+    }
+    const notesDot = document.getElementById("notes-dot");
+    if (notesDot) {
+      const notesEl = document.getElementById("notes");
+      const hasNotes = Boolean(notesEl && notesEl.value && notesEl.value.trim());
+      notesDot.classList.toggle("hidden", !hasNotes);
+    }
+  }
   function serializeHeaders() {
-    return state.headers.filter((h) => h.key && h.key.trim()).map((h) => `${h.key.trim()}: ${h.value.trim()}`).join("\n");
+    return state.headers.filter((h) => h.enabled !== false && h.key && h.key.trim()).map((h) => `${h.key.trim()}: ${h.value.trim()}`).join("\n");
   }
   function parseHeadersIntoState(raw) {
     if (!raw) {
@@ -197,7 +222,7 @@
       if (idx < 1) {
         return null;
       }
-      return { key: line.substring(0, idx).trim(), value: line.substring(idx + 1).trim() };
+      return { key: line.substring(0, idx).trim(), value: line.substring(idx + 1).trim(), enabled: true };
     }).filter(Boolean);
   }
   function constructFullUrl() {
@@ -209,7 +234,7 @@
     if (!baseUrl) {
       return "";
     }
-    const validParams = state.queryParams.filter((p) => p.key && p.value);
+    const validParams = state.queryParams.filter((p) => p.enabled !== false && p.key && p.value);
     if (validParams.length > 0) {
       const separator = baseUrl.includes("?") ? "&" : "?";
       const qs = validParams.map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join("&");
@@ -217,7 +242,7 @@
     }
     return baseUrl;
   }
-  function updateEnvironmentIndicator(envName) {
+  function updateEnvironmentIndicator(envName, varCount) {
     const badge = document.getElementById("env-badge");
     if (!badge) {
       return;
@@ -226,6 +251,93 @@
     const isProd = envName.toLowerCase().includes("prod");
     badge.style.color = isProd ? "#f85149" : "#58a6ff";
     badge.style.background = isProd ? "rgba(248,81,73,0.15)" : "rgba(56,139,253,0.15)";
+    badge.removeAttribute("title");
+    badge.tabIndex = 0;
+    if (envName === "none") {
+      badge.dataset.tooltip = "No active environment selected";
+    } else {
+      const countStr = typeof varCount === "number" ? ` \u2022 ${varCount} variable${varCount === 1 ? "" : "s"}` : "";
+      badge.dataset.tooltip = `Active Environment: ${envName}${countStr}`;
+    }
+    checkEnvVariableHint();
+  }
+  function checkEnvVariableHint() {
+    const banner = document.getElementById("env-hint-banner");
+    if (!banner) {
+      return;
+    }
+    const activeEnv = state.activeEnvironment || "none";
+    if (activeEnv !== "none") {
+      banner.classList.add("hidden");
+      return;
+    }
+    const url = document.getElementById("url")?.value || "";
+    const body = document.getElementById("body")?.value || "";
+    const headerStr = state.headers.map((h) => `${h.key} ${h.value}`).join(" ");
+    const combined = `${url} ${headerStr} ${body}`;
+    const varMatch = combined.match(/\{\{([a-zA-Z0-9_-]+)\}\}/);
+    if (varMatch) {
+      const varName = varMatch[1];
+      banner.innerHTML = `<span>\u26A0\uFE0F Variable <code>{{${escapeHtml(varName)}}}</code> detected, but <strong>No Environment</strong> is selected.</span>`;
+      banner.classList.remove("hidden");
+    } else {
+      banner.classList.add("hidden");
+    }
+  }
+  function showToast(type, message, duration) {
+    const container = document.getElementById("toast-container");
+    if (!container) {
+      return;
+    }
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type || "info"}`;
+    let icon = "\u2139\uFE0F";
+    if (type === "success") {
+      icon = "\u2713";
+    } else if (type === "warning") {
+      icon = "\u26A0\uFE0F";
+    } else if (type === "error") {
+      icon = "\u2715";
+    }
+    toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <span class="toast-message">${escapeHtml(message)}</span>
+        <button type="button" class="toast-close" title="Dismiss">\u2715</button>
+    `;
+    toast.querySelector(".toast-close")?.addEventListener("click", () => {
+      dismissToast(toast);
+    });
+    while (container.children.length >= 3) {
+      dismissToast(container.firstElementChild);
+    }
+    container.appendChild(toast);
+    let autoDuration = duration;
+    if (!autoDuration) {
+      if (type === "error") {
+        autoDuration = 5e3;
+      } else if (type === "warning") {
+        autoDuration = 4e3;
+      } else {
+        autoDuration = 2500;
+      }
+    }
+    const timer = setTimeout(() => {
+      dismissToast(toast);
+    }, autoDuration);
+    toast._dismissTimer = timer;
+  }
+  function dismissToast(toast) {
+    if (!toast || toast._dismissing) {
+      return;
+    }
+    toast._dismissing = true;
+    if (toast._dismissTimer) {
+      clearTimeout(toast._dismissTimer);
+    }
+    toast.classList.add("toast-fade-out");
+    setTimeout(() => {
+      toast.remove();
+    }, 200);
   }
   function hideModals() {
     document.querySelectorAll(".modal").forEach((m) => {
@@ -244,6 +356,58 @@
       tabButton.classList.add("active");
     }
   }
+  function switchResponseViewMode(mode) {
+    state.responseViewMode = mode;
+    const prettyBtn = document.getElementById("res-view-pretty");
+    const rawBtn = document.getElementById("res-view-raw");
+    if (prettyBtn) {
+      prettyBtn.classList.toggle("active", mode === "pretty");
+    }
+    if (rawBtn) {
+      rawBtn.classList.toggle("active", mode === "raw");
+    }
+    if (state.lastResponseRawData !== null && state.lastResponseRawData !== void 0) {
+      renderResponseBody(state.lastResponseRawData);
+    }
+  }
+  function renderResponseBody(data) {
+    const container = document.getElementById("response-body");
+    if (!container) {
+      return;
+    }
+    if (data === null || data === void 0) {
+      container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">\u26A1</div>
+                <div class="empty-title">Ready to Send</div>
+                <div class="empty-desc">Send a request to inspect its response body, status, and headers.</div>
+            </div>`;
+      return;
+    }
+    const isPretty = state.responseViewMode === "pretty";
+    if (typeof data === "object") {
+      if (isPretty) {
+        const jsonStr = JSON.stringify(data, null, 2);
+        container.innerHTML = `<pre style="margin:0;font-family:var(--font-mono);">${syntaxHighlightJson(jsonStr)}</pre>`;
+      } else {
+        const rawStr = JSON.stringify(data);
+        container.innerHTML = `<pre style="margin:0;font-family:var(--font-mono);white-space:pre-wrap;word-break:break-all;">${escapeHtml(rawStr)}</pre>`;
+      }
+      return;
+    }
+    const strData = String(data);
+    if (isPretty) {
+      try {
+        const parsed = JSON.parse(strData);
+        if (typeof parsed === "object" && parsed !== null) {
+          container.innerHTML = `<pre style="margin:0;font-family:var(--font-mono);">${syntaxHighlightJson(JSON.stringify(parsed, null, 2))}</pre>`;
+          return;
+        }
+      } catch {
+      }
+    }
+    container.innerHTML = `<pre style="margin:0;font-family:var(--font-mono);white-space:pre-wrap;word-break:break-all;">${escapeHtml(strData)}</pre>`;
+  }
   function renderResponseHeaders(headers) {
     const container = document.getElementById("response-headers-list");
     const badge = document.getElementById("res-headers-count");
@@ -251,7 +415,12 @@
       return;
     }
     if (!headers || typeof headers !== "object" || Object.keys(headers).length === 0) {
-      container.innerHTML = `<div class="fg-muted" style="text-align:center;margin-top:20px;">No response headers received</div>`;
+      container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">\u{1F4CB}</div>
+                <div class="empty-title">No Headers Yet</div>
+                <div class="empty-desc">Response headers will appear here after sending a request.</div>
+            </div>`;
       if (badge) {
         badge.textContent = "";
       }
@@ -296,20 +465,97 @@
       }
     );
   }
-  var init_ui = __esm({
-    "src/webview/ui.js"() {
-      "use strict";
-      init_state();
+
+  // src/webview/api.js
+  var _vscode = null;
+  function initApi(vscode) {
+    _vscode = vscode;
+  }
+  function post(message) {
+    _vscode.postMessage(message);
+  }
+  function notify(level, text) {
+    showToast(level, text);
+    if (level === "error") {
+      _vscode.postMessage({ type: "notify", level, text });
     }
-  });
+  }
+  function copyText(text, button) {
+    if (text === null || text === void 0) {
+      return;
+    }
+    if (_vscode) {
+      _vscode.postMessage({ type: "copyToClipboard", text: String(text) });
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(String(text)).catch(() => {
+        });
+      }
+    } catch {
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = String(text);
+        textarea.style.position = "fixed";
+        textarea.style.top = "-9999px";
+        textarea.style.left = "-9999px";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      } catch {
+      }
+    }
+    if (button) {
+      showCopiedState(button);
+    }
+  }
 
   // src/webview/auth.js
+  function maskSecret(str) {
+    if (!str || typeof str !== "string") {
+      return "";
+    }
+    if (str.includes("{{")) {
+      return str;
+    }
+    if (str.length <= 8) {
+      return "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+    }
+    return `${str.substring(0, 4)}\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022${str.substring(str.length - 4)}`;
+  }
+  function formatHumanExpiry(expiresInSeconds, tokenReceivedAt) {
+    if (!expiresInSeconds) {
+      return "No expiration specified";
+    }
+    if (!tokenReceivedAt) {
+      return `Expires in: ${expiresInSeconds}s`;
+    }
+    const remainingMs = expiresInSeconds * 1e3 - (Date.now() - tokenReceivedAt);
+    if (remainingMs <= 0) {
+      return "Token expired";
+    }
+    const remainingSec = Math.floor(remainingMs / 1e3);
+    const hours = Math.floor(remainingSec / 3600);
+    const minutes = Math.floor(remainingSec % 3600 / 60);
+    const seconds = remainingSec % 60;
+    if (hours > 0) {
+      return `Expires in: ${hours}h ${minutes}m`;
+    }
+    if (minutes > 0) {
+      return `Expires in: ${minutes}m ${seconds}s`;
+    }
+    return `Expires in: ${seconds}s`;
+  }
   function renderAuthFields(type) {
     const container = document.getElementById("auth-fields");
     if (!container) {
       return;
     }
     state.authConfig.type = type || "none";
+    updateTabDots();
     switch (type) {
       case "basic":
         container.innerHTML = `
@@ -425,9 +671,8 @@
       }
       preview.innerHTML = `<span>Authorization: Basic ${encoded}</span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
       preview.classList.remove("hidden");
-      document.getElementById("copy-auth-preview")?.addEventListener("click", () => {
-        navigator.clipboard.writeText(`Authorization: Basic ${encoded}`);
-        notify("info", "Auth header copied to clipboard");
+      document.getElementById("copy-auth-preview")?.addEventListener("click", (e) => {
+        copyText(`Authorization: Basic ${encoded}`, e.currentTarget);
       });
     } else {
       preview.classList.add("hidden");
@@ -448,11 +693,10 @@
     }
     const token = state.authConfig.token || "";
     if (token) {
-      preview.innerHTML = `<span>Authorization: Bearer ${token}</span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
+      preview.innerHTML = `<span>Authorization: Bearer <span class="auth-mask">${escapeHtml(maskSecret(token))}</span></span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
       preview.classList.remove("hidden");
-      document.getElementById("copy-auth-preview")?.addEventListener("click", () => {
-        navigator.clipboard.writeText(`Authorization: Bearer ${token}`);
-        notify("info", "Auth header copied to clipboard");
+      document.getElementById("copy-auth-preview")?.addEventListener("click", (e) => {
+        copyText(`Authorization: Bearer ${token}`, e.currentTarget);
       });
     } else {
       preview.classList.add("hidden");
@@ -484,13 +728,25 @@
     const keyName = state.authConfig.keyName || "";
     const keyValue = state.authConfig.keyValue || "";
     const keyIn = state.authConfig.keyIn || "header";
+    const dupHintEl = document.getElementById("apikey-dup-hint");
+    if (dupHintEl) {
+      dupHintEl.remove();
+    }
     if (keyName && keyValue) {
+      const dupPattern = new RegExp(`^${keyName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*:`, "i");
+      if (keyIn === "header" && dupPattern.test(keyValue.trim())) {
+        const hint = document.createElement("div");
+        hint.id = "apikey-dup-hint";
+        hint.className = "auth-warning-hint";
+        hint.innerHTML = `<span>\u26A0</span><span>Enter <strong>only the key value</strong> here \u2014 the header name is added automatically.</span>`;
+        preview.before(hint);
+      }
       const text = keyIn === "header" ? `${keyName}: ${keyValue}` : `?${encodeURIComponent(keyName)}=${encodeURIComponent(keyValue)}`;
-      preview.innerHTML = `<span>${keyIn === "header" ? "Header" : "Query Param"}: ${text}</span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
+      const maskedHtml = keyIn === "header" ? `Header: ${escapeHtml(keyName)}: <span class="auth-mask">${escapeHtml(maskSecret(keyValue))}</span>` : `Query Param: ?${escapeHtml(keyName)}=<span class="auth-mask">${escapeHtml(maskSecret(keyValue))}</span>`;
+      preview.innerHTML = `<span>${maskedHtml}</span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
       preview.classList.remove("hidden");
-      document.getElementById("copy-auth-preview")?.addEventListener("click", () => {
-        navigator.clipboard.writeText(text);
-        notify("info", "Copied to clipboard");
+      document.getElementById("copy-auth-preview")?.addEventListener("click", (e) => {
+        copyText(text, e.currentTarget);
       });
     } else {
       preview.classList.add("hidden");
@@ -514,8 +770,7 @@
   }
   function triggerFetchOAuthToken() {
     const btn = document.getElementById("fetch-oauth-btn");
-    const envBadge = document.getElementById("env-badge");
-    const activeEnv = envBadge?.textContent === "No Environment" ? "none" : envBadge?.textContent || "none";
+    const activeEnv = state.activeEnvironment || "none";
     const tokenUrl = document.getElementById("oauth-token-url")?.value?.trim();
     const clientId = document.getElementById("oauth-client-id")?.value?.trim();
     const clientSecret = document.getElementById("oauth-client-secret")?.value?.trim();
@@ -566,7 +821,7 @@
       return;
     }
     const isExpired = state.authConfig.expiresIn && state.authConfig.tokenReceivedAt ? Date.now() - state.authConfig.tokenReceivedAt > state.authConfig.expiresIn * 1e3 : false;
-    const expiryText = state.authConfig.expiresIn ? `Expires: ${state.authConfig.expiresIn}s` : "No expiration specified";
+    const expiryText = formatHumanExpiry(state.authConfig.expiresIn, state.authConfig.tokenReceivedAt);
     container.innerHTML = `
         <div class="oauth-token-card">
             <div class="oauth-token-header">
@@ -574,10 +829,10 @@
                 <span class="token-status-badge ${isExpired ? "expired" : "valid"}">${isExpired ? "Expired" : "Valid"}</span>
             </div>
             <div style="font-family:var(--font-mono);font-size:11px;word-break:break-all;color:var(--fg-muted);">
-                ${state.authConfig.accessToken.substring(0, 32)}...
+                <span class="auth-mask">${escapeHtml(maskSecret(state.authConfig.accessToken))}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
-                <span class="fg-muted" style="font-size:10px;">${expiryText}</span>
+                <span class="fg-muted" style="font-size:10px;">${escapeHtml(expiryText)}</span>
                 <div style="display:flex;gap:6px;">
                     <button type="button" class="tool-btn" id="copy-oauth-token" style="padding:2px 8px;font-size:10px;">Copy Token</button>
                     <button type="button" class="tool-btn" id="clear-oauth-token" style="padding:2px 8px;font-size:10px;color:var(--error);">Clear</button>
@@ -585,9 +840,8 @@
             </div>
         </div>
     `;
-    document.getElementById("copy-oauth-token")?.addEventListener("click", () => {
-      navigator.clipboard.writeText(state.authConfig.accessToken);
-      notify("info", "Access token copied to clipboard");
+    document.getElementById("copy-oauth-token")?.addEventListener("click", (e) => {
+      copyText(state.authConfig.accessToken, e.currentTarget);
     });
     document.getElementById("clear-oauth-token")?.addEventListener("click", () => {
       state.authConfig.accessToken = "";
@@ -606,11 +860,10 @@
     const token = state.authConfig.accessToken;
     const type = state.authConfig.tokenType || "Bearer";
     if (token) {
-      preview.innerHTML = `<span>Authorization: ${type} ${token.substring(0, 24)}...</span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
+      preview.innerHTML = `<span>Authorization: ${escapeHtml(type)} <span class="auth-mask">${escapeHtml(maskSecret(token))}</span></span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
       preview.classList.remove("hidden");
-      document.getElementById("copy-auth-preview")?.addEventListener("click", () => {
-        navigator.clipboard.writeText(`Authorization: ${type} ${token}`);
-        notify("info", "Auth header copied to clipboard");
+      document.getElementById("copy-auth-preview")?.addEventListener("click", (e) => {
+        copyText(`Authorization: ${type} ${token}`, e.currentTarget);
       });
     } else {
       preview.classList.add("hidden");
@@ -692,13 +945,6 @@ ${cleanHeaders.trim()}` : authHeader;
     }
     renderAuthFields(state.authConfig.type);
   }
-  var init_auth = __esm({
-    "src/webview/auth.js"() {
-      "use strict";
-      init_state();
-      init_api();
-    }
-  });
 
   // src/webview/request.js
   function getRequestData({ forSend = false } = {}) {
@@ -712,9 +958,10 @@ ${cleanHeaders.trim()}` : authHeader;
       method: document.getElementById("method")?.value || "GET",
       url: constructFullUrl(),
       headers,
+      headerRows: state.headers.map((h) => ({ key: h.key || "", value: h.value || "", enabled: h.enabled !== false })),
       body: document.getElementById("body")?.value || "",
       notes: document.getElementById("notes")?.value || "",
-      queryParams: [...state.queryParams],
+      queryParams: state.queryParams.map((p) => ({ key: p.key || "", value: p.value || "", enabled: p.enabled !== false })),
       auth,
       environment: activeEnv,
       retryCount: parseInt(document.getElementById("retry-count")?.value || "0", 10),
@@ -728,7 +975,7 @@ ${cleanHeaders.trim()}` : authHeader;
       post({ type: "cancelRequest" });
       if (sendButton) {
         sendButton.textContent = "Send";
-        sendButton.classList.remove("loading");
+        sendButton.classList.remove("loading", "retry-mode");
       }
       state.isRequestInProgress = false;
       return;
@@ -761,8 +1008,9 @@ ${cleanHeaders.trim()}` : authHeader;
     state.currentRequest = { ...requestData };
     state.isRequestInProgress = true;
     if (sendButton) {
-      sendButton.textContent = "Cancel \u2715";
+      sendButton.innerHTML = '<span class="btn-spinner"></span> Cancel \u2715';
       sendButton.classList.add("loading");
+      sendButton.classList.remove("retry-mode");
     }
     post({
       type: "sendRequest",
@@ -771,6 +1019,10 @@ ${cleanHeaders.trim()}` : authHeader;
     });
   }
   function clearRequestForm() {
+    state.currentRequest = null;
+    state.lastLoadedCollection = null;
+    state.lastResponseRawData = null;
+    state.lastResponseHeaders = {};
     const methodSelect = document.getElementById("method");
     const urlInput = document.getElementById("url");
     const bodyTextarea = document.getElementById("body");
@@ -791,12 +1043,38 @@ ${cleanHeaders.trim()}` : authHeader;
     state.headers = [];
     renderQueryParams();
     renderHeaders();
+    state.responseViewMode = "pretty";
+    const prettyBtn = document.getElementById("res-view-pretty");
+    const rawBtn = document.getElementById("res-view-raw");
+    if (prettyBtn) {
+      prettyBtn.classList.add("active");
+    }
+    if (rawBtn) {
+      rawBtn.classList.remove("active");
+    }
+    renderResponseBody(null);
+    renderResponseHeaders({});
+    const statusBadge = document.getElementById("status-badge");
+    if (statusBadge) {
+      statusBadge.textContent = "---";
+      statusBadge.className = "badge";
+    }
+    const timeBadge = document.getElementById("time-badge");
+    if (timeBadge) {
+      timeBadge.textContent = "-- ms";
+    }
+    const sizeBadge = document.getElementById("size-badge");
+    if (sizeBadge) {
+      sizeBadge.textContent = "-- KB";
+    }
     state.authConfig = createDefaultAuthConfig();
     const authTypeSelect = document.getElementById("auth-type");
     if (authTypeSelect) {
       authTypeSelect.value = "none";
     }
     renderAuthFields("none");
+    updateMethodColor("GET");
+    updateTabDots();
   }
   function loadRequestIntoForm(item, collectionName) {
     if (!item) {
@@ -808,8 +1086,9 @@ ${cleanHeaders.trim()}` : authHeader;
     const urlInput = document.getElementById("url");
     const bodyTextarea = document.getElementById("body");
     const notesTextarea = document.getElementById("notes");
+    const method = item.method || "GET";
     if (methodSelect) {
-      methodSelect.value = item.method || "GET";
+      methodSelect.value = method;
     }
     if (urlInput) {
       urlInput.value = (item.url || "").split("?")[0];
@@ -820,15 +1099,28 @@ ${cleanHeaders.trim()}` : authHeader;
     if (notesTextarea) {
       notesTextarea.value = item.notes || "";
     }
-    parseHeadersIntoState(item.headers || "");
+    updateMethodColor(method);
+    if (Array.isArray(item.headerRows) && item.headerRows.length > 0) {
+      state.headers = item.headerRows.map((h) => ({
+        key: h.key || "",
+        value: h.value || "",
+        enabled: h.enabled !== false
+      }));
+    } else {
+      parseHeadersIntoState(item.headers || "");
+    }
     renderHeaders();
-    if (item.queryParams && item.queryParams.length > 0) {
-      state.queryParams = item.queryParams.map((p) => ({ ...p }));
+    if (Array.isArray(item.queryParams) && item.queryParams.length > 0) {
+      state.queryParams = item.queryParams.map((p) => ({
+        key: p.key || "",
+        value: p.value || "",
+        enabled: p.enabled !== false
+      }));
     } else {
       try {
         const urlObj = new URL(item.url || "");
         state.queryParams = [];
-        urlObj.searchParams.forEach((value, key) => state.queryParams.push({ key, value }));
+        urlObj.searchParams.forEach((value, key) => state.queryParams.push({ key, value, enabled: true }));
         if (urlInput) {
           urlInput.value = urlObj.origin + urlObj.pathname;
         }
@@ -857,6 +1149,7 @@ ${cleanHeaders.trim()}` : authHeader;
     }
     updateSslIndicator(sslVerify);
     restoreAuthUI(item.auth || createDefaultAuthConfig());
+    updateTabDots();
     notify("info", `Loaded: ${item.name || "Request"}`);
   }
   function saveRequest() {
@@ -885,29 +1178,10 @@ ${cleanHeaders.trim()}` : authHeader;
     });
     hideModals();
   }
-  var init_request = __esm({
-    "src/webview/request.js"() {
-      "use strict";
-      init_state();
-      init_api();
-      init_ui();
-      init_auth();
-    }
-  });
-
-  // src/webview/main.js
-  init_state();
-  init_api();
-  init_ui();
-  init_auth();
-  init_request();
 
   // src/webview/curl.js
-  init_state();
-  init_api();
-  init_ui();
   function exportToCurl() {
-    const url = constructFullUrl();
+    let url = constructFullUrl();
     if (!url || url.trim() === "") {
       notify("error", "Please enter a URL first");
       return;
@@ -915,13 +1189,32 @@ ${cleanHeaders.trim()}` : authHeader;
     const methodSelect = document.getElementById("method");
     const bodyTextarea = document.getElementById("body");
     const method = methodSelect ? methodSelect.value : "GET";
-    const headers = state.headers.filter((h) => h.key.trim()).map((h) => `${h.key.trim()}: ${h.value.trim()}`).join("\n");
     const body = bodyTextarea ? bodyTextarea.value : "";
     let cmdParts = ["curl"];
-    if (method !== "GET") {
-      cmdParts.push("-X", method);
+    if (state.settings && state.settings.sslVerify === false) {
+      cmdParts.push("-k");
+    }
+    if (method && method !== "GET") {
+      cmdParts.push(`-X ${method}`);
+    }
+    if (state.authConfig && state.authConfig.type === "basic") {
+      const user = state.authConfig.username || "";
+      const pass = state.authConfig.password || "";
+      if (user || pass) {
+        cmdParts.push(`-u "${user.replace(/"/g, '\\"')}:${pass.replace(/"/g, '\\"')}"`);
+      }
+    }
+    if (state.authConfig && state.authConfig.type === "apikey" && state.authConfig.keyIn === "query") {
+      const kName = state.authConfig.keyName || "";
+      const kVal = state.authConfig.keyValue || "";
+      if (kName && kVal) {
+        const sep = url.includes("?") ? "&" : "?";
+        url += `${sep}${encodeURIComponent(kName)}=${encodeURIComponent(kVal)}`;
+      }
     }
     cmdParts.push(`"${url.replace(/"/g, '\\"')}"`);
+    const rawHeaders = serializeHeaders();
+    const headers = applyAuthHeaderToRawHeaders(rawHeaders);
     if (headers && headers.trim()) {
       headers.split("\n").forEach((line) => {
         const trimmed = line.trim();
@@ -934,34 +1227,12 @@ ${cleanHeaders.trim()}` : authHeader;
       try {
         const escaped = JSON.stringify(JSON.parse(body)).replace(/"/g, '\\"');
         cmdParts.push(`-d "${escaped}"`);
-      } catch (e) {
+      } catch {
         const escaped = body.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
         cmdParts.push(`-d "${escaped}"`);
       }
     }
-    copyToClipboard(cmdParts.join(" \\\n  "), "cURL command copied to clipboard");
-  }
-  function copyToClipboard(text, successMessage) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => {
-        notify("info", successMessage);
-      }).catch(() => notify("error", "\u274C Failed to copy to clipboard"));
-    } else {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      try {
-        document.execCommand("copy");
-        notify("info", successMessage);
-      } catch {
-        notify("error", "\u274C Failed to copy to clipboard");
-      } finally {
-        document.body.removeChild(textarea);
-      }
-    }
+    copyText(cmdParts.join(" \\\n  "), document.getElementById("export-curl"));
   }
   function showCurlImportModal() {
     const modal = document.getElementById("curl-import-modal");
@@ -990,66 +1261,22 @@ ${cleanHeaders.trim()}` : authHeader;
   }
 
   // src/webview/shortcuts.js
-  init_state();
-
-  // src/webview/collections.js
-  init_state();
-  init_api();
-  init_ui();
-
-  // src/webview/shortcuts.js
-  init_api();
-  init_request();
-  init_ui();
-  function matchesShortcut(e, shortcutStr) {
-    if (!shortcutStr) {
-      return false;
-    }
-    const parts = shortcutStr.toLowerCase().split("+");
-    const requiresCtrl = parts.includes("ctrl") || parts.includes("cmd");
-    const requiresShift = parts.includes("shift");
-    const requiresAlt = parts.includes("alt");
-    const key = parts[parts.length - 1];
-    const hasCtrl = e.ctrlKey || e.metaKey;
-    if (requiresCtrl !== hasCtrl) {
-      return false;
-    }
-    if (requiresShift !== e.shiftKey) {
-      return false;
-    }
-    if (requiresAlt !== e.altKey) {
-      return false;
-    }
-    let eKey = e.key.toLowerCase();
-    if (eKey === " ") {
-      eKey = "space";
-    }
-    return eKey === key;
-  }
-  function handleKeyboardShortcuts(e) {
-    if (e.target && e.target.classList && e.target.classList.contains("shortcut-input")) {
+  function toggleShortcutsModal() {
+    const modal = document.getElementById("shortcuts-modal");
+    if (!modal) {
       return;
     }
-    const shortcuts = state.settings.shortcuts || {
-      sendRequest: "ctrl+enter",
-      saveRequest: "ctrl+s",
-      clearForm: "ctrl+k",
-      closeModal: "escape"
-    };
-    if (matchesShortcut(e, shortcuts.sendRequest)) {
+    modal.style.display = modal.style.display === "flex" ? "none" : "flex";
+  }
+  function handleKeyboardShortcuts(e) {
+    const isTyping = e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT");
+    if (!isTyping && e.key === "?") {
       e.preventDefault();
-      sendRequest();
-    } else if (matchesShortcut(e, shortcuts.closeModal)) {
+      toggleShortcutsModal();
+      return;
+    }
+    if (e.key === "Escape") {
       hideModals();
-    } else if (matchesShortcut(e, shortcuts.saveRequest)) {
-      e.preventDefault();
-      const saveBtn = document.getElementById("save-btn");
-      if (saveBtn) {
-        saveBtn.click();
-      }
-    } else if (matchesShortcut(e, shortcuts.clearForm)) {
-      e.preventDefault();
-      clearRequestForm();
     }
   }
 
@@ -1061,22 +1288,36 @@ ${cleanHeaders.trim()}` : authHeader;
     renderQueryParams();
     renderHeaders();
     renderAuthFields("none");
+    updateMethodColor("GET");
+    updateTabDots();
+    checkEnvVariableHint();
     post({ type: "webviewReady" });
   });
   function setupEventListeners() {
+    document.getElementById("url")?.addEventListener("input", () => {
+      checkEnvVariableHint();
+    });
     document.querySelectorAll(".tab-btn").forEach((btn) => {
       btn.addEventListener("click", () => switchTab(btn.dataset.tab));
     });
     document.querySelectorAll(".res-tab-btn").forEach((btn) => {
       btn.addEventListener("click", () => switchResponseTab(btn.dataset.resTab));
     });
+    document.getElementById("res-view-pretty")?.addEventListener("click", () => switchResponseViewMode("pretty"));
+    document.getElementById("res-view-raw")?.addEventListener("click", () => switchResponseViewMode("raw"));
+    const methodSelect = document.getElementById("method");
+    if (methodSelect) {
+      methodSelect.addEventListener("change", (e) => updateMethodColor(e.target.value));
+    }
+    document.getElementById("body")?.addEventListener("input", updateTabDots);
+    document.getElementById("notes")?.addEventListener("input", updateTabDots);
     document.getElementById("send")?.addEventListener("click", sendRequest);
     document.getElementById("add-param")?.addEventListener("click", () => {
-      state.queryParams.push({ key: "", value: "" });
+      state.queryParams.push({ key: "", value: "", enabled: true });
       renderQueryParams();
     });
     document.getElementById("add-header")?.addEventListener("click", () => {
-      state.headers.push({ key: "", value: "" });
+      state.headers.push({ key: "", value: "", enabled: true });
       renderHeaders();
     });
     document.getElementById("auth-type")?.addEventListener("change", (e) => {
@@ -1117,18 +1358,11 @@ ${cleanHeaders.trim()}` : authHeader;
     });
     document.getElementById("confirm-save")?.addEventListener("click", saveRequest);
     document.getElementById("cancel-save")?.addEventListener("click", hideModals);
-    document.getElementById("copy-response")?.addEventListener("click", () => {
+    document.getElementById("close-shortcuts-modal")?.addEventListener("click", hideModals);
+    document.getElementById("copy-response")?.addEventListener("click", (e) => {
       const activeResTab = document.querySelector(".res-tab-btn.active")?.dataset.resTab;
-      if (activeResTab === "headers") {
-        const headers = state.lastResponseHeaders || {};
-        const text = Object.entries(headers).map(([k, v]) => `${k}: ${v}`).join("\n");
-        navigator.clipboard.writeText(text);
-        notify("info", "Response headers copied to clipboard");
-      } else {
-        const body = document.getElementById("response-body")?.textContent || "";
-        navigator.clipboard.writeText(body);
-        notify("info", "Response copied to clipboard");
-      }
+      const textToCopy = activeResTab === "headers" ? Object.entries(state.lastResponseHeaders || {}).map(([k, v]) => `${k}: ${v}`).join("\n") : state.lastResponseRawData !== null && state.lastResponseRawData !== void 0 ? typeof state.lastResponseRawData === "object" ? state.responseViewMode === "pretty" ? JSON.stringify(state.lastResponseRawData, null, 2) : JSON.stringify(state.lastResponseRawData) : String(state.lastResponseRawData) : document.getElementById("response-body")?.textContent || "";
+      copyText(textToCopy, e.currentTarget);
     });
     document.addEventListener("keydown", handleKeyboardShortcuts);
     window.addEventListener("message", handleMessage);
@@ -1136,11 +1370,35 @@ ${cleanHeaders.trim()}` : authHeader;
   function handleMessage(event) {
     const msg = event.data;
     switch (msg.type) {
-      case "environments":
+      case "environments": {
         state.environments = msg.environments || [];
         state.activeEnvironment = msg.activeEnvironment || "none";
-        updateEnvironmentIndicator(state.activeEnvironment);
+        const activeEnvObj = state.environments.find((e) => e.name === state.activeEnvironment);
+        const varCount = activeEnvObj?.variables ? Object.keys(activeEnvObj.variables).length : 0;
+        updateEnvironmentIndicator(state.activeEnvironment, varCount);
         break;
+      }
+      case "focusUrl": {
+        const urlInput = document.getElementById("url");
+        if (urlInput) {
+          urlInput.focus();
+          urlInput.select();
+        }
+        break;
+      }
+      case "triggerSend":
+        sendRequest();
+        break;
+      case "triggerClear":
+        clearRequestForm();
+        break;
+      case "triggerSave": {
+        const saveBtn = document.getElementById("save-btn");
+        if (saveBtn) {
+          saveBtn.click();
+        }
+        break;
+      }
       case "loadRequest":
         loadRequestIntoForm(msg.data || msg.request, msg.collectionName);
         break;
@@ -1150,9 +1408,15 @@ ${cleanHeaders.trim()}` : authHeader;
       case "error":
         handleError(msg);
         break;
-      case "retryAttempt":
-        document.getElementById("send").textContent = `Retrying (${msg.attempt}/${msg.total})...`;
+      case "retryAttempt": {
+        const sendBtn = document.getElementById("send");
+        if (sendBtn) {
+          const total = msg.total || msg.maxRetries || "?";
+          sendBtn.innerHTML = `<span class="btn-spinner"></span> Retrying (${msg.attempt}/${total})...`;
+          sendBtn.classList.add("loading", "retry-mode");
+        }
         break;
+      }
       case "collections":
         populateCollectionsDropdown(msg.collections);
         break;
@@ -1166,15 +1430,22 @@ ${cleanHeaders.trim()}` : authHeader;
     const btn = document.getElementById("send");
     if (btn) {
       btn.textContent = "Send";
-      btn.classList.remove("loading");
+      btn.classList.remove("loading", "retry-mode");
     }
     const statusBadge = document.getElementById("status-badge");
     const timeBadge = document.getElementById("time-badge");
     const sizeBadge = document.getElementById("size-badge");
-    const responseBody = document.getElementById("response-body");
     if (statusBadge) {
       statusBadge.textContent = `${res.status} ${res.statusText}`;
-      statusBadge.className = `badge ${res.status < 300 ? "badge-2xx" : res.status < 500 ? "badge-4xx" : "badge-5xx"}`;
+      let statusClass = "badge-2xx";
+      if (res.status >= 300 && res.status < 400) {
+        statusClass = "badge-3xx";
+      } else if (res.status >= 400 && res.status < 500) {
+        statusClass = "badge-4xx";
+      } else if (res.status >= 500) {
+        statusClass = "badge-5xx";
+      }
+      statusBadge.className = `badge ${statusClass}`;
     }
     if (timeBadge) {
       timeBadge.textContent = `${res.duration} ms`;
@@ -1182,29 +1453,23 @@ ${cleanHeaders.trim()}` : authHeader;
     if (sizeBadge) {
       sizeBadge.textContent = res.size ? `${(res.size / 1024).toFixed(2)} KB` : "-- KB";
     }
+    state.lastResponseRawData = res.data;
     state.lastResponseHeaders = res.headers || {};
+    renderResponseBody(res.data);
     renderResponseHeaders(res.headers);
-    if (responseBody) {
-      try {
-        if (typeof res.data === "object" && res.data !== null) {
-          responseBody.innerHTML = `<pre style="margin:0">${syntaxHighlightJson(JSON.stringify(res.data, null, 2))}</pre>`;
-        } else {
-          responseBody.textContent = String(res.data);
-        }
-      } catch {
-        responseBody.textContent = String(res.data);
-      }
-    }
   }
   function handleError(res) {
     state.isRequestInProgress = false;
+    state.lastResponseRawData = null;
+    state.lastResponseHeaders = {};
     const btn = document.getElementById("send");
     if (btn) {
       btn.textContent = "Send";
-      btn.classList.remove("loading");
+      btn.classList.remove("loading", "retry-mode");
     }
     const statusBadge = document.getElementById("status-badge");
     const timeBadge = document.getElementById("time-badge");
+    const sizeBadge = document.getElementById("size-badge");
     const responseBody = document.getElementById("response-body");
     if (statusBadge) {
       statusBadge.textContent = res.cancelled ? "Cancelled" : "Error";
@@ -1212,6 +1477,9 @@ ${cleanHeaders.trim()}` : authHeader;
     }
     if (timeBadge) {
       timeBadge.textContent = res.duration ? `${res.duration} ms` : "--";
+    }
+    if (sizeBadge) {
+      sizeBadge.textContent = "-- KB";
     }
     if (responseBody) {
       const errorMessage = res.error || res.message || "Network request failed";

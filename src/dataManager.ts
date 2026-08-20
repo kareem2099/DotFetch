@@ -6,6 +6,7 @@ export interface RequestData {
     method: string;
     url: string;
     headers: string;
+    headerRows?: any[];
     body: string;
     notes?: string;
     queryParams?: any[];
@@ -108,6 +109,22 @@ export class DataManager {
             this.state.collections[collectionName] = this.state.collections[collectionName].filter(r => r.id !== requestId);
             await this.save();
         }
+    }
+
+    async duplicateRequest(collectionName: string, requestId: string) {
+        if (!this.state.collections[collectionName]) { return; }
+        const original = this.state.collections[collectionName].find(r => r.id === requestId);
+        if (!original) { return; }
+
+        const duplicate: RequestData = {
+            ...original,
+            id: Date.now().toString(),
+            name: `${original.name || 'Request'} (Copy)`,
+            createdAt: new Date().toISOString()
+        };
+
+        this.state.collections[collectionName].push(duplicate);
+        await this.save();
     }
 
     // --- Favorites ---

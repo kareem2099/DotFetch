@@ -1,11 +1,45 @@
 import { state, createDefaultAuthConfig } from './state.js';
-import { post, notify } from './api.js';
+import { post, notify, copyText } from './api.js';
+import { updateTabDots, escapeHtml, showCopiedState } from './ui.js';
+
+export function maskSecret(str) {
+    if (!str || typeof str !== 'string') { return ''; }
+    if (str.includes('{{')) { return str; } // Don't mask variable placeholders like {{API_KEY}}
+    if (str.length <= 8) {
+        return '••••••••';
+    }
+    return `${str.substring(0, 4)}••••••••${str.substring(str.length - 4)}`;
+}
+
+export function formatHumanExpiry(expiresInSeconds, tokenReceivedAt) {
+    if (!expiresInSeconds) { return 'No expiration specified'; }
+    if (!tokenReceivedAt) { return `Expires in: ${expiresInSeconds}s`; }
+
+    const remainingMs = (expiresInSeconds * 1000) - (Date.now() - tokenReceivedAt);
+    if (remainingMs <= 0) {
+        return 'Token expired';
+    }
+
+    const remainingSec = Math.floor(remainingMs / 1000);
+    const hours = Math.floor(remainingSec / 3600);
+    const minutes = Math.floor((remainingSec % 3600) / 60);
+    const seconds = remainingSec % 60;
+
+    if (hours > 0) {
+        return `Expires in: ${hours}h ${minutes}m`;
+    }
+    if (minutes > 0) {
+        return `Expires in: ${minutes}m ${seconds}s`;
+    }
+    return `Expires in: ${seconds}s`;
+}
 
 export function renderAuthFields(type) {
     const container = document.getElementById('auth-fields');
-    if (!container) {return;}
+    if (!container) { return; }
 
     state.authConfig.type = type || 'none';
+    updateTabDots();
 
     switch (type) {
         case 'basic':
@@ -85,7 +119,7 @@ export function renderAuthFields(type) {
 function setupPasswordToggle(inputId, toggleBtnId) {
     const input = document.getElementById(inputId);
     const btn = document.getElementById(toggleBtnId);
-    if (!input || !btn) {return;}
+    if (!input || !btn) { return; }
 
     btn.addEventListener('click', () => {
         const isPassword = input.type === 'password';
@@ -113,7 +147,7 @@ function setupBasicAuthListeners() {
 
 export function updateBasicAuthPreview() {
     const preview = document.getElementById('auth-preview');
-    if (!preview) {return;}
+    if (!preview) { return; }
     const user = state.authConfig.username || '';
     const pass = state.authConfig.password || '';
     if (user || pass) {
@@ -133,9 +167,8 @@ export function updateBasicAuthPreview() {
 
         preview.innerHTML = `<span>Authorization: Basic ${encoded}</span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
         preview.classList.remove('hidden');
-        document.getElementById('copy-auth-preview')?.addEventListener('click', () => {
-            navigator.clipboard.writeText(`Authorization: Basic ${encoded}`);
-            notify('info', 'Auth header copied to clipboard');
+        document.getElementById('copy-auth-preview')?.addEventListener('click', e => {
+            copyText(`Authorization: Basic ${encoded}`, e.currentTarget);
         });
     } else {
         preview.classList.add('hidden');
@@ -155,14 +188,13 @@ function setupBearerAuthListeners() {
 
 export function updateBearerAuthPreview() {
     const preview = document.getElementById('auth-preview');
-    if (!preview) {return;}
+    if (!preview) { return; }
     const token = state.authConfig.token || '';
     if (token) {
-        preview.innerHTML = `<span>Authorization: Bearer ${token}</span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
+        preview.innerHTML = `<span>Authorization: Bearer <span class="auth-mask">${escapeHtml(maskSecret(token))}</span></span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
         preview.classList.remove('hidden');
-        document.getElementById('copy-auth-preview')?.addEventListener('click', () => {
-            navigator.clipboard.writeText(`Authorization: Bearer ${token}`);
-            notify('info', 'Auth header copied to clipboard');
+        document.getElementById('copy-auth-preview')?.addEventListener('click', e => {
+            copyText(`Authorization: Bearer ${token}`, e.currentTarget);
         });
     } else {
         preview.classList.add('hidden');
@@ -193,18 +225,35 @@ function setupApiKeyListeners() {
 
 export function updateApiKeyPreview() {
     const preview = document.getElementById('auth-preview');
-    if (!preview) {return;}
+    if (!preview) { return; }
     const keyName = state.authConfig.keyName || '';
     const keyValue = state.authConfig.keyValue || '';
     const keyIn = state.authConfig.keyIn || 'header';
 
+    // UX guard: detect if the user accidentally included the header name in the value
+    const dupHintEl = document.getElementById('apikey-dup-hint');
+    if (dupHintEl) { dupHintEl.remove(); }
+
     if (keyName && keyValue) {
+        // Check if value starts with "keyName:" (case-insensitive) — common copy-paste mistake
+        const dupPattern = new RegExp(`^${keyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`, 'i');
+        if (keyIn === 'header' && dupPattern.test(keyValue.trim())) {
+            const hint = document.createElement('div');
+            hint.id = 'apikey-dup-hint';
+            hint.className = 'auth-warning-hint';
+            hint.innerHTML = `<span>⚠</span><span>Enter <strong>only the key value</strong> here — the header name is added automatically.</span>`;
+            preview.before(hint);
+        }
+
         const text = keyIn === 'header' ? `${keyName}: ${keyValue}` : `?${encodeURIComponent(keyName)}=${encodeURIComponent(keyValue)}`;
-        preview.innerHTML = `<span>${keyIn === 'header' ? 'Header' : 'Query Param'}: ${text}</span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
+        const maskedHtml = keyIn === 'header'
+            ? `Header: ${escapeHtml(keyName)}: <span class="auth-mask">${escapeHtml(maskSecret(keyValue))}</span>`
+            : `Query Param: ?${escapeHtml(keyName)}=<span class="auth-mask">${escapeHtml(maskSecret(keyValue))}</span>`;
+
+        preview.innerHTML = `<span>${maskedHtml}</span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
         preview.classList.remove('hidden');
-        document.getElementById('copy-auth-preview')?.addEventListener('click', () => {
-            navigator.clipboard.writeText(text);
-            notify('info', 'Copied to clipboard');
+        document.getElementById('copy-auth-preview')?.addEventListener('click', e => {
+            copyText(text, e.currentTarget);
         });
     } else {
         preview.classList.add('hidden');
@@ -233,8 +282,7 @@ function setupOAuth2Listeners() {
 
 export function triggerFetchOAuthToken() {
     const btn = document.getElementById('fetch-oauth-btn');
-    const envBadge = document.getElementById('env-badge');
-    const activeEnv = envBadge?.textContent === 'No Environment' ? 'none' : (envBadge?.textContent || 'none');
+    const activeEnv = state.activeEnvironment || 'none';
 
     const tokenUrl = document.getElementById('oauth-token-url')?.value?.trim();
     const clientId = document.getElementById('oauth-client-id')?.value?.trim();
@@ -285,7 +333,7 @@ export function handleOAuthTokenResult(msg) {
 
 function renderOAuthTokenCard() {
     const container = document.getElementById('oauth-token-display');
-    if (!container) {return;}
+    if (!container) { return; }
 
     if (!state.authConfig.accessToken) {
         container.innerHTML = '';
@@ -296,9 +344,7 @@ function renderOAuthTokenCard() {
         ? (Date.now() - state.authConfig.tokenReceivedAt) > (state.authConfig.expiresIn * 1000)
         : false;
 
-    const expiryText = state.authConfig.expiresIn
-        ? `Expires: ${state.authConfig.expiresIn}s`
-        : 'No expiration specified';
+    const expiryText = formatHumanExpiry(state.authConfig.expiresIn, state.authConfig.tokenReceivedAt);
 
     container.innerHTML = `
         <div class="oauth-token-card">
@@ -307,10 +353,10 @@ function renderOAuthTokenCard() {
                 <span class="token-status-badge ${isExpired ? 'expired' : 'valid'}">${isExpired ? 'Expired' : 'Valid'}</span>
             </div>
             <div style="font-family:var(--font-mono);font-size:11px;word-break:break-all;color:var(--fg-muted);">
-                ${state.authConfig.accessToken.substring(0, 32)}...
+                <span class="auth-mask">${escapeHtml(maskSecret(state.authConfig.accessToken))}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
-                <span class="fg-muted" style="font-size:10px;">${expiryText}</span>
+                <span class="fg-muted" style="font-size:10px;">${escapeHtml(expiryText)}</span>
                 <div style="display:flex;gap:6px;">
                     <button type="button" class="tool-btn" id="copy-oauth-token" style="padding:2px 8px;font-size:10px;">Copy Token</button>
                     <button type="button" class="tool-btn" id="clear-oauth-token" style="padding:2px 8px;font-size:10px;color:var(--error);">Clear</button>
@@ -319,9 +365,8 @@ function renderOAuthTokenCard() {
         </div>
     `;
 
-    document.getElementById('copy-oauth-token')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(state.authConfig.accessToken);
-        notify('info', 'Access token copied to clipboard');
+    document.getElementById('copy-oauth-token')?.addEventListener('click', e => {
+        copyText(state.authConfig.accessToken, e.currentTarget);
     });
 
     document.getElementById('clear-oauth-token')?.addEventListener('click', () => {
@@ -336,16 +381,15 @@ function renderOAuthTokenCard() {
 
 export function updateOAuthPreview() {
     const preview = document.getElementById('auth-preview');
-    if (!preview) {return;}
+    if (!preview) { return; }
     const token = state.authConfig.accessToken;
     const type = state.authConfig.tokenType || 'Bearer';
 
     if (token) {
-        preview.innerHTML = `<span>Authorization: ${type} ${token.substring(0, 24)}...</span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
+        preview.innerHTML = `<span>Authorization: ${escapeHtml(type)} <span class="auth-mask">${escapeHtml(maskSecret(token))}</span></span><button type="button" class="tool-btn" id="copy-auth-preview" style="padding:2px 6px;font-size:10px;">Copy</button>`;
         preview.classList.remove('hidden');
-        document.getElementById('copy-auth-preview')?.addEventListener('click', () => {
-            navigator.clipboard.writeText(`Authorization: ${type} ${token}`);
-            notify('info', 'Auth header copied to clipboard');
+        document.getElementById('copy-auth-preview')?.addEventListener('click', e => {
+            copyText(`Authorization: ${type} ${token}`, e.currentTarget);
         });
     } else {
         preview.classList.add('hidden');

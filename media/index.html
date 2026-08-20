@@ -37,6 +37,9 @@
         <span id="env-badge" class="badge env-badge">No Environment</span>
     </div>
 
+    <!-- Env Hint Banner -->
+    <div id="env-hint-banner" class="env-hint-banner hidden"></div>
+
     <!-- Request Tabs -->
     <div class="tabs-container">
         <div class="tab-header">
@@ -46,10 +49,16 @@
             <button class="tab-btn" data-tab="headers">
                 Headers <span class="tab-count" id="headers-count"></span>
             </button>
-            <button class="tab-btn" data-tab="auth">Auth</button>
-            <button class="tab-btn" data-tab="body">Body</button>
-            <button class="tab-btn" data-tab="notes">Notes</button>
-            <button class="tab-btn" data-tab="settings">⚙️</button>
+            <button class="tab-btn" data-tab="auth">
+                Auth <span class="tab-dot hidden" id="auth-dot"></span>
+            </button>
+            <button class="tab-btn" data-tab="body">
+                Body <span class="tab-dot hidden" id="body-dot"></span>
+            </button>
+            <button class="tab-btn" data-tab="notes">
+                Notes <span class="tab-dot hidden" id="notes-dot"></span>
+            </button>
+            <button class="tab-btn" data-tab="settings" title="Request Settings">⚙️</button>
         </div>
 
         <!-- Params -->
@@ -117,30 +126,38 @@
     <div id="response-container" class="response-container">
         <div class="response-header">
             <div class="response-meta">
-                <span>Response</span>
+                <span class="response-title">Response</span>
                 <span id="status-badge" class="badge">---</span>
-                <span id="time-badge" class="fg-muted">-- ms</span>
-                <span id="size-badge" class="fg-muted">-- KB</span>
+                <span id="time-badge" class="meta-badge" title="Response time">-- ms</span>
+                <span id="size-badge" class="meta-badge" title="Payload size">-- KB</span>
             </div>
             <div class="response-tabs">
                 <button class="res-tab-btn active" data-res-tab="body">Body</button>
                 <button class="res-tab-btn" data-res-tab="headers">Headers <span id="res-headers-count" class="tab-count"></span></button>
             </div>
             <div class="response-actions">
-                <button id="copy-response" class="tool-btn" style="padding:2px 8px;" title="Copy response content">Copy</button>
+                <div class="res-view-toggle" id="res-view-toggle">
+                    <button id="res-view-pretty" class="view-btn active" title="Formatted JSON with syntax highlighting">Pretty</button>
+                    <button id="res-view-raw" class="view-btn" title="Raw unformatted response">Raw</button>
+                </div>
+                <button id="copy-response" class="tool-btn copy-btn" title="Copy response content">Copy</button>
             </div>
         </div>
         <div id="response-body-tab" class="response-tab-content active">
             <div id="response-body" class="response-body">
-                <div class="fg-muted" style="text-align:center;margin-top:20px;">
-                    Send a request to see the response
+                <div class="empty-state">
+                    <div class="empty-icon">⚡</div>
+                    <div class="empty-title">Ready to Send</div>
+                    <div class="empty-desc">Send a request to inspect its response body, status, and headers.</div>
                 </div>
             </div>
         </div>
         <div id="response-headers-tab" class="response-tab-content">
             <div id="response-headers-list" class="response-headers-list">
-                <div class="fg-muted" style="text-align:center;margin-top:20px;">
-                    No response headers received yet
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <div class="empty-title">No Headers Yet</div>
+                    <div class="empty-desc">Response headers will appear here after sending a request.</div>
                 </div>
             </div>
         </div>
@@ -172,6 +189,29 @@
             </div>
         </div>
     </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcuts-modal" class="modal">
+        <div class="modal-box glass shortcuts-modal-box">
+            <div class="modal-header">
+                <h3 style="margin:0;font-size:14px;">⌨️ Keyboard Shortcuts</h3>
+                <button id="close-shortcuts-modal" class="tool-btn" style="padding:2px 6px;">✕</button>
+            </div>
+            <table class="shortcuts-table">
+                <tbody>
+                    <tr><td><kbd>Ctrl</kbd> + <kbd>Enter</kbd></td><td>Send Active Request</td></tr>
+                    <tr><td><kbd>Alt</kbd> + <kbd>D</kbd></td><td>Focus URL Bar</td></tr>
+                    <tr><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd></td><td>Save Request to Collection</td></tr>
+                    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Backspace</kbd></td><td>Clear Request Form</td></tr>
+                    <tr><td><kbd>?</kbd></td><td>Toggle Shortcuts Help</td></tr>
+                    <tr><td><kbd>Escape</kbd></td><td>Close Active Modal</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <script src="./logger.js"></script>
     <script src="./script.js"></script>

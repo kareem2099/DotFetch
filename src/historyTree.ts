@@ -5,10 +5,20 @@ export class HistoryTreeItem extends vscode.TreeItem {
     constructor(
         public readonly request: RequestData
     ) {
-        super(`${request.method} ${request.name || request.url}`, vscode.TreeItemCollapsibleState.None);
+        let displayPath = request.name;
+        if (!displayPath || displayPath === request.url) {
+            try {
+                const parsed = new URL(request.url);
+                displayPath = parsed.pathname + (parsed.search ? parsed.search : '');
+            } catch {
+                displayPath = request.url;
+            }
+        }
+
+        super(`${request.method.toUpperCase()} ${displayPath || '/'}`, vscode.TreeItemCollapsibleState.None);
         
-        this.description = request.status ? `${request.status} • ${request.duration}ms` : '';
-        this.tooltip = `${request.method} ${request.url}\nSent at: ${new Date(request.createdAt).toLocaleString()}`;
+        this.description = request.status ? `${request.status}  ${request.duration ? request.duration + 'ms' : ''}`.trim() : '';
+        this.tooltip = `${request.method.toUpperCase()} ${request.url}\nStatus: ${request.status || '---'}\nDuration: ${request.duration ? request.duration + 'ms' : '--'}\nTime: ${new Date(request.createdAt).toLocaleTimeString()}`;
         this.iconPath = this.getIcon(request.method);
         this.contextValue = 'historyItem';
         
